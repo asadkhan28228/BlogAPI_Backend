@@ -1,10 +1,10 @@
 ﻿using BlogApi.BLL.Dtos.Auth;
 using BlogApi.BLL.Dtos.Auth.BlogAPI.BLL.DTOs;
 using BlogApi.BLL.Interface;
-using BlogApi.BLL.Service;
 using BlogApi.DAL.Entities;
 using BlogApi.DAL.InterfacesRepositories;
 using BlogAPI.DAL.Repositories;
+using EMSBLL.Interfaces;
 using Microsoft.AspNetCore.Identity;
 
 namespace BlogAPI.BLL.Services
@@ -12,15 +12,15 @@ namespace BlogAPI.BLL.Services
     public class AuthService : IAuthService
     {
         private readonly IUserRepository _userRepository;
-        
         private readonly PasswordHasher<User> _passwordHasher;
+        // 1. Yahan interface use karein aur sahi naam rakhein
+        private readonly IJwtService _jwtServices;
 
-        private readonly JwtServices _Jwtsevice;
-
-        public AuthService(IUserRepository userRepository,JwtServices jwtsevice)
+        // 2. Constructor mein bhi IJwtServices inject karein
+        public AuthService(IUserRepository userRepository, IJwtService jwtServices)
         {
             _userRepository = userRepository;
-            _Jwtsevice = jwtsevice;
+            _jwtServices = jwtServices;
             _passwordHasher = new PasswordHasher<User>();
         }
 
@@ -43,7 +43,8 @@ namespace BlogAPI.BLL.Services
 
             await _userRepository.AddAsync(user);
 
-            var token = _JwtServices.GenerateToken(user);
+            // 3. Register mein _jwtServices call karein
+            var token = _jwtServices.GenerateToken(user);
 
             return new AuthResponseDto
             {
@@ -63,7 +64,8 @@ namespace BlogAPI.BLL.Services
             if (result == PasswordVerificationResult.Failed)
                 throw new Exception("Invalid email or password.");
 
-            var token = _tokenGenerator.GenerateToken(user);
+            // 4. Login mein bhi _tokenGenerator ki jagah _jwtServices use karein
+            var token = _jwtServices.GenerateToken(user);
 
             return new AuthResponseDto
             {

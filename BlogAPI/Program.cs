@@ -1,7 +1,9 @@
-using BlogApi.BLL.Service;
+
 using BlogApi.DAL.InterfacesRepositories;
 using BlogAPI.DAL.Data;
 using BlogAPI.DAL.Repositories;
+using EMSBLL.Interfaces;
+using EMSBLL.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -60,7 +62,7 @@ builder.Services.AddAuthorization();
 
 
 
-builder.Services.AddScoped<JwtServices>();
+builder.Services.AddScoped<IJwtService,JwtService>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 
 var app = builder.Build();
