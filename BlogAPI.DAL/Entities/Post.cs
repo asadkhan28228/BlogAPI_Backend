@@ -14,6 +14,8 @@ namespace BlogApi.DAL.Entities
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? UpdatedAt { get; set; }
 
+        public int Userid { get; set; }
+
         // Foreign keys
         public int AuthorId { get; set; }
         public int CategoryId { get; set; }
