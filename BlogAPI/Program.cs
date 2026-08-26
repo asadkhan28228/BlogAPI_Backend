@@ -1,5 +1,7 @@
 
+using BlogApi.BLL.Interface;
 using BlogApi.DAL.InterfacesRepositories;
+using BlogAPI.BLL.Services;
 using BlogAPI.DAL.Data;
 using BlogAPI.DAL.Repositories;
 using EMSBLL.Interfaces;
@@ -52,7 +54,7 @@ builder.Services.AddAuthentication(options =>
 
         IssuerSigningKey = new SymmetricSecurityKey(
             Encoding.UTF8.GetBytes(
-                builder.Configuration["Jwt:Key"]!
+                builder.Configuration["JwtSettings:SecretKey"]!
             )
         )
     };
@@ -64,6 +66,7 @@ builder.Services.AddAuthorization();
 
 builder.Services.AddScoped<IJwtService,JwtService>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IAuthService, AuthService>();
 
 var app = builder.Build();
 
