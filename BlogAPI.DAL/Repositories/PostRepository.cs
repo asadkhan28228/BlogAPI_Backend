@@ -1,5 +1,4 @@
-﻿
-using BlogApi.DAL.Entities;
+﻿using BlogApi.DAL.Entities;
 using BlogApi.DAL.InterfacesRepositories;
 using BlogAPI.DAL.Data;
 using Microsoft.EntityFrameworkCore;
@@ -15,39 +14,58 @@ namespace BlogApi.DAL.Repositories
             _context = context;
         }
 
+
+        // GET ALL
         public async Task<IEnumerable<Post>> GetAllAsync()
         {
-            return await _context.Posts.ToListAsync();
+            return await _context.Posts
+                .OrderByDescending(p => p.CreatedAt)
+                .ToListAsync();
         }
 
+
+        // GET BY ID
         public async Task<Post?> GetByIdAsync(int id)
         {
-            return await _context.Posts.FirstOrDefaultAsync(x => x.Id == id);
+            return await _context.Posts
+                .FirstOrDefaultAsync(p => p.Id == id);
         }
 
+
+        // CREATE
         public async Task<Post> AddAsync(Post post)
         {
             await _context.Posts.AddAsync(post);
+
             await _context.SaveChangesAsync();
 
             return post;
         }
 
+
+        // UPDATE
         public async Task UpdateAsync(Post post)
         {
             _context.Posts.Update(post);
+
             await _context.SaveChangesAsync();
         }
 
+
+        // DELETE
         public async Task DeleteAsync(int id)
         {
-            var post = await _context.Posts.FirstOrDefaultAsync(x => x.Id == id);
+            var post = await _context.Posts
+                .FirstOrDefaultAsync(p => p.Id == id);
 
-            if (post != null)
+            if (post == null)
             {
-                _context.Posts.Remove(post);
-                await _context.SaveChangesAsync();
+                return;
             }
+
+            _context.Posts.Remove(post);
+
+            await _context.SaveChangesAsync();
         }
     }
 }

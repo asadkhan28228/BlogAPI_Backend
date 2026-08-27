@@ -1,11 +1,10 @@
 ﻿using BlogApi.BLL.DTOs.Post;
 using BlogApi.BLL.Interfaces;
-using BlogApi.DAL.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
-namespace BlogApi.API.Controllers
+namespace BlogApi.PL.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
@@ -19,19 +18,20 @@ namespace BlogApi.API.Controllers
             _postService = postService;
         }
 
+        // =========================
+        // GET ALL POSTS
+        // =========================
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
             var posts = await _postService.GetAllAsync();
 
-            if (posts == null || !posts.Any())
-            {
-                return NotFound("No posts found.");
-            }
-
             return Ok(posts);
         }
 
+        // =========================
+        // GET POST BY ID
+        // =========================
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
@@ -50,34 +50,51 @@ namespace BlogApi.API.Controllers
             return Ok(post);
         }
 
+        // =========================
+        // CREATE POST
+        // =========================
         [HttpPost]
-     
-        public async Task<IActionResult> Create(CreatePostDto dto)
+        public async Task<IActionResult> Create(
+            [FromBody] CreatePostDto dto)
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (dto == null)
+            {
+                return BadRequest("Post data is required.");
+            }
 
-            if (string.IsNullOrEmpty(userId))
+            var userId = GetCurrentUserId();
+
+            if (userId == null)
             {
                 return Unauthorized("User ID not found.");
             }
 
-            if (!int.TryParse(userId, out int userIdValue))
+            try
             {
-                return Unauthorized("Invalid User ID.");
+                var post = await _postService.CreateAsync(
+                    dto,
+                    userId.Value
+                );
+
+                return CreatedAtAction(
+                    nameof(GetById),
+                    new { id = post.Id },
+                    post
+                );
             }
-
-            var post = await _postService.CreateAsync(dto, userIdValue);
-
-            return CreatedAtAction(
-                nameof(GetById),
-                new { id = post.Id },
-                post
-            );
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
+        // =========================
+        // UPDATE POST
+        // =========================
         [HttpPut("{id}")]
-       
-        public async Task<IActionResult> Update(int id, UpdatePostDto dto)
+        public async Task<IActionResult> Update(
+            int id,
+            [FromBody] UpdatePostDto dto)
         {
             if (id <= 0)
             {
@@ -89,32 +106,33 @@ namespace BlogApi.API.Controllers
                 return BadRequest("Post data is required.");
             }
 
-            var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var userId = GetCurrentUserId();
 
-            if (string.IsNullOrEmpty(userIdValue))
+            if (userId == null)
             {
                 return Unauthorized("User ID not found.");
             }
 
-            if (!int.TryParse(userIdValue, out int userId))
-            {
-                return Unauthorized("Invalid user ID.");
-            }
-
-            var result = await _postService.UpdateAsync(id, dto, userId);
+            var result = await _postService.UpdateAsync(
+                id,
+                dto,
+                userId.Value
+            );
 
             if (!result)
             {
                 return NotFound(
-                    "Post not found or you are not the owner."
+                    "Post not found, category not found, or you are not the owner."
                 );
             }
 
             return Ok("Post updated successfully.");
         }
 
+        // =========================
+        // DELETE POST
+        // =========================
         [HttpDelete("{id}")]
-        
         public async Task<IActionResult> Delete(int id)
         {
             if (id <= 0)
@@ -122,21 +140,16 @@ namespace BlogApi.API.Controllers
                 return BadRequest("Invalid post ID.");
             }
 
-            var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var userId = GetCurrentUserId();
 
-            if (string.IsNullOrEmpty(userIdValue))
+            if (userId == null)
             {
                 return Unauthorized("User ID not found.");
             }
 
-            if (!int.TryParse(userIdValue, out int userId))
-            {
-                return Unauthorized("Invalid user ID.");
-            }
-
             var result = await _postService.DeleteAsync(
                 id,
-                userId
+                userId.Value
             );
 
             if (!result)
@@ -147,6 +160,35 @@ namespace BlogApi.API.Controllers
             }
 
             return Ok("Post deleted successfully.");
+        }
+
+        // =========================
+        // GET USER ID FROM JWT
+        // =========================
+        private int? GetCurrentUserId()
+        {
+            var userId = User.FindFirstValue(
+                ClaimTypes.NameIdentifier
+            );
+
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                return null;
+            }
+
+            if (!int.TryParse(
+                    userId,
+                    out int userIdValue))
+            {
+                return null;
+            }
+
+            if (userIdValue <= 0)
+            {
+                return null;
+            }
+
+            return userIdValue;
         }
     }
 }

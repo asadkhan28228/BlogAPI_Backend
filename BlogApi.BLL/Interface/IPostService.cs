@@ -8,10 +8,17 @@ namespace BlogApi.BLL.Interfaces
 
         Task<PostDto?> GetByIdAsync(int id);
 
-        Task<PostDto> CreateAsync(CreatePostDto dto, int userId);
+        Task<PostDto> CreateAsync(
+            CreatePostDto dto,
+            int userId);
 
-        Task<bool> UpdateAsync(int id, UpdatePostDto dto, int userId);
+        Task<bool> UpdateAsync(
+            int id,
+            UpdatePostDto dto,
+            int userId);
 
-        Task<bool> DeleteAsync(int id, int userId);
+        Task<bool> DeleteAsync(
+            int id,
+            int userId);
     }
 }

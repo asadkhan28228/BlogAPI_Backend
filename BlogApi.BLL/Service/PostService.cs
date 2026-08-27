@@ -9,10 +9,22 @@ namespace BlogApi.BLL.Services
     {
         private readonly IPostRepository _postRepository;
 
-        public PostService(IPostRepository postRepository)
+        private readonly ICategoryRepository _categoryRepository;
+
+
+        public PostService(
+            IPostRepository postRepository,
+            ICategoryRepository categoryRepository)
         {
             _postRepository = postRepository;
+
+            _categoryRepository = categoryRepository;
         }
+
+
+        // ==========================================
+        // GET ALL POSTS
+        // ==========================================
 
         public async Task<IEnumerable<PostDto>> GetAllAsync()
         {
@@ -25,6 +37,11 @@ namespace BlogApi.BLL.Services
 
             return posts.Select(MapToDto);
         }
+
+
+        // ==========================================
+        // GET POST BY ID
+        // ==========================================
 
         public async Task<PostDto?> GetByIdAsync(int id)
         {
@@ -43,7 +60,14 @@ namespace BlogApi.BLL.Services
             return MapToDto(post);
         }
 
-        public async Task<PostDto> CreateAsync(CreatePostDto dto, int userId)
+
+        // ==========================================
+        // CREATE POST
+        // ==========================================
+
+        public async Task<PostDto> CreateAsync(
+            CreatePostDto dto,
+            int userId)
         {
             if (userId <= 0)
             {
@@ -65,26 +89,66 @@ namespace BlogApi.BLL.Services
                 throw new ArgumentException("Post content is required.");
             }
 
+            if (dto.CategoryId <= 0)
+            {
+                throw new ArgumentException("Valid category ID is required.");
+            }
+
+
+            // Check Category
+            var category =await _categoryRepository.GetByIdAsync(dto.CategoryId);
+
+            if (category == null)
+            {
+                throw new ArgumentException("Category not found.");
+            }
+
+
+            var title = dto.Title.Trim();
+
+            var content = dto.Content.Trim();
+
+
             var post = new Post
             {
-                Title = dto.Title.Trim(),
-                Content = dto.Content.Trim(),
+                Title = title,
+
+                Content = content,
+
                 UserId = userId,
+
+                CategoryId = dto.CategoryId,
+
                 CreatedAt = DateTime.UtcNow,
+
+                UpdatedAt = null,
+
                 IsPublished = false,
-                Slug = dto.Title
-                    .Trim()
-                    .ToLower()
-                    .Replace(" ", "-")
+
+                Slug = GenerateSlug(title)
             };
 
-            var createdPost = await _postRepository.AddAsync(post);
 
+            var createdPost =await _postRepository.AddAsync(post);
             return MapToDto(createdPost);
         }
 
-        public async Task<bool> UpdateAsync(int id, UpdatePostDto dto, int userId)
+
+        // ==========================================
+        // UPDATE POST
+        // ==========================================
+
+        public async Task<bool> UpdateAsync(int id,UpdatePostDto dto,int userId)
         {
+            if (id <= 0)
+            {
+                return false;
+            }
+
+            if (userId <= 0)
+            {
+                return false;
+            }
 
             if (dto == null)
             {
@@ -101,28 +165,66 @@ namespace BlogApi.BLL.Services
                 return false;
             }
 
-            var post = await _postRepository.GetByIdAsync(id);
+            if (dto.CategoryId <= 0)
+            {
+                return false;
+            }
+
+
+            // Get Post
+            var post =await _postRepository.GetByIdAsync(id);
 
             if (post == null)
             {
                 return false;
             }
 
+
+            // Only Owner Can Update
             if (post.UserId != userId)
             {
                 return false;
             }
 
-            post.Title = dto.Title.Trim();
-            post.Content = dto.Content.Trim();
+
+            // Check Category
+            var category =await _categoryRepository.GetByIdAsync(dto.CategoryId);
+
+            if (category == null)
+            {
+                return false;
+            }
+
+
+            var title = dto.Title.Trim();
+
+            var content = dto.Content.Trim();
+
+
+            // Update fields
+            post.Title = title;
+
+            post.Content = content;
+
+            post.CategoryId = dto.CategoryId;
+
+            post.Slug = GenerateSlug(title);
+
             post.UpdatedAt = DateTime.UtcNow;
 
+
             await _postRepository.UpdateAsync(post);
+
 
             return true;
         }
 
-        public async Task<bool> DeleteAsync(int id, int userId)
+
+        // ==========================================
+        // DELETE POST
+        // ==========================================
+
+        public async Task<bool> DeleteAsync(int id,int userId)
         {
             if (id <= 0)
             {
@@ -134,34 +236,70 @@ namespace BlogApi.BLL.Services
                 return false;
             }
 
-            var post = await _postRepository.GetByIdAsync(id);
+
+            // Get Post
+            var post =
+                await _postRepository.GetByIdAsync(id);
 
             if (post == null)
             {
                 return false;
             }
 
+
+            // Only Owner Can Delete
             if (post.UserId != userId)
             {
                 return false;
             }
 
+
             await _postRepository.DeleteAsync(id);
+
 
             return true;
         }
+
+
+        // ==========================================
+        // MAP ENTITY -> DTO
+        // ==========================================
 
         private static PostDto MapToDto(Post post)
         {
             return new PostDto
             {
                 Id = post.Id,
+
                 Title = post.Title,
+
                 Content = post.Content,
+
+                Slug = post.Slug,
+
+                IsPublished = post.IsPublished,
+
                 UserId = post.UserId,
-                CreatedAt = post.CreatedAt,
-                UpdatedAt = post.UpdatedAt
+
+                CategoryId = post.CategoryId,
+
+                CreatedAt = post.CreatedAt
+
+                
             };
+        }
+
+
+        // ==========================================
+        // GENERATE SLUG
+        // ==========================================
+
+        private static string GenerateSlug(string title)
+        {
+            return title
+                .Trim()
+                .ToLower()
+                .Replace(" ", "-");
         }
     }
 }
