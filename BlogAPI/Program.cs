@@ -1,9 +1,8 @@
-
-//using BlogApi.BLL.Interface;
-//using BlogApi.BLL.Interfaces;
-
 using BlogApi.BLL.Interface;
+using BlogApi.BLL.Interfaces;
+using BlogApi.BLL.Services;
 using BlogApi.DAL.InterfacesRepositories;
+using BlogApi.DAL.Repositories;
 using BlogAPI.BLL.Services;
 using BlogAPI.DAL.Data;
 using BlogAPI.DAL.Repositories;
@@ -51,9 +50,8 @@ builder.Services.AddAuthentication(options =>
 
         ValidateIssuerSigningKey = true,
 
-        ValidIssuer = builder.Configuration["Jwt:Issuer"],
-
-        ValidAudience = builder.Configuration["Jwt:Audience"],
+        ValidIssuer = builder.Configuration["JwtSettings:Issuer"],      // "BlogAPI"
+        ValidAudience = builder.Configuration["JwtSettings:Audience"],  // "BlogAPIUsers"
 
         IssuerSigningKey = new SymmetricSecurityKey(
             Encoding.UTF8.GetBytes(
@@ -69,10 +67,12 @@ builder.Services.AddAuthorization();
 builder.Services.AddScoped<IAuthService, AuthService>();
 
 builder.Services.AddScoped<IJwtService,JwtService>();
-//builder.Services.AddScoped<IPostService,PostService>();
+builder.Services.AddScoped<IPostService,PostService>();
+builder.Services.AddScoped<ICategoryService, CategoryService>();
 
+builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
-//builder.Services.AddScoped<IPostRepository, PostRepository>();
+builder.Services.AddScoped<IPostRepository, PostRepository>();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

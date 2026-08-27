@@ -1,13 +1,13 @@
-﻿//using System;
-//using System.Collections.Generic;
-//using System.Text;
+﻿using System;
+using System.Collections.Generic;
+using System.Text;
 
-//namespace BlogApi.BLL.DTOs.Post
-//{
-//    public class UpdatePostDto
-//    {
-//        public string Title { get; set; }
+namespace BlogApi.BLL.DTOs.Post
+{
+    public class UpdatePostDto
+    {
+        public string Title { get; set; }
 
-//        public string Content { get; set; }
-//    }
-//}
+        public string Content { get; set; }
+    }
+}
