@@ -10,13 +10,13 @@ namespace BlogAPI.DAL.Repositories
         private readonly AppDbContext _context;
 
         public UserRepository(AppDbContext context)
-        {
+       {
             _context = context;
         }
 
-        public async Task<User?> GetByIdAsync(int id)
+        public async Task<User?> GetByIdAsync(int User_id)
         {
-            return await _context.Users.FindAsync(id);
+            return await _context.Users.FindAsync(User_id);
         }
 
         public async Task<User?> GetByEmailAsync(string email)

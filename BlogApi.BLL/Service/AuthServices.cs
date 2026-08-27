@@ -11,7 +11,7 @@ namespace BlogAPI.BLL.Services
 {
     public class AuthService : IAuthService
     {
-        private readonly IUserRepository _userRepository;
+       private readonly IUserRepository _userRepository;
         private readonly PasswordHasher<User> _passwordHasher;
         // 1. Yahan interface use karein aur sahi naam rakhein
         private readonly IJwtService _jwtServices;
@@ -29,16 +29,16 @@ namespace BlogAPI.BLL.Services
             // Business rule: email already registered na ho
             var existingUser = await _userRepository.GetByEmailAsync(dto.Email);
             if (existingUser != null)
+            {
                 throw new Exception("Email already registered.");
-
+            }
             var user = new User
             {
                 Username = dto.Username,
                 Email = dto.Email,
                 Role = "User"
             };
-
-            // Password hash karna (kabhi plain text save nahi karte)
+           // Password hash karna (kabhi plain text save nahi karte)
             user.PasswordHash = _passwordHasher.HashPassword(user, dto.Password);
 
             await _userRepository.AddAsync(user);
@@ -48,9 +48,8 @@ namespace BlogAPI.BLL.Services
 
             return new AuthResponseDto
             {
-                UserId = user.Id,
-                Username = user.Username,
-                Token = token
+                Message = "Register successfully."
+                
             };
         }
 
@@ -58,18 +57,24 @@ namespace BlogAPI.BLL.Services
         {
             var user = await _userRepository.GetByEmailAsync(dto.Email);
             if (user == null)
-                throw new Exception("Invalid email or password.");
+            {
+                return null;
+            }
 
             var result = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, dto.Password);
             if (result == PasswordVerificationResult.Failed)
-                throw new Exception("Invalid email or password.");
+            {
+                return null;
+            }
 
             // 4. Login mein bhi _tokenGenerator ki jagah _jwtServices use karein
             var token = _jwtServices.GenerateToken(user);
 
             return new AuthResponseDto
             {
-                UserId = user.Id,
+                Message = "Login successfully.",
+                UserId = user.User_id,
+                Email = user.Email,
                 Username = user.Username,
                 Token = token
             };

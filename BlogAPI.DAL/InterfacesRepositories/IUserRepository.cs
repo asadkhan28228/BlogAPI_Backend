@@ -5,7 +5,7 @@ namespace BlogApi.DAL.InterfacesRepositories
 {
     public interface IUserRepository
     {
-        Task<User?> GetByIdAsync(int id);
+        Task<User?> GetByIdAsync(int User_id);
 
         Task<User?> GetByEmailAsync(string email);
 
@@ -14,5 +14,7 @@ namespace BlogApi.DAL.InterfacesRepositories
         Task<bool> EmailExistsAsync(string email);
 
         Task<User> AddAsync(User user);
+       
+        
     }
 }

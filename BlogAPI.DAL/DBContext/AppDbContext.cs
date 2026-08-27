@@ -5,11 +5,15 @@ namespace BlogAPI.DAL.Data
 {
     public class AppDbContext : DbContext
     {
-        public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
+        public AppDbContext(DbContextOptions<AppDbContext> options)
+            : base(options)
         {
         }
 
-        // DbSets = ye har entity ke liye ek "table" represent karte hain
+        // ============================
+        // DbSets
+        // ============================
+
         public DbSet<User> Users { get; set; }
         public DbSet<Post> Posts { get; set; }
         public DbSet<Comment> Comments { get; set; }
@@ -17,68 +21,146 @@ namespace BlogAPI.DAL.Data
         public DbSet<Tag> Tags { get; set; }
         public DbSet<PostTag> PostTags { get; set; }
 
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
 
-            // ============================
-            // User -> Posts (One-to-Many)
-            // ============================
-            modelBuilder.Entity<Post>()
-                .HasOne(p => p.Author)
-                .WithMany(u => u.Posts)
-                .HasForeignKey(p => p.AuthorId)
-                .OnDelete(DeleteBehavior.Restrict);   // user delete ho to uske posts delete na hon
 
             // ============================
-            // Category -> Posts (One-to-Many)
+            // User Primary Key
             // ============================
+
+            modelBuilder.Entity<User>()
+                .HasKey(u => u.User_id);
+
+
+            // ============================
+            // Post Primary Key
+            // ============================
+
+            modelBuilder.Entity<Post>()
+                .HasKey(p => p.Id);
+
+
+            // ============================
+            // Comment Primary Key
+            // ============================
+
+            modelBuilder.Entity<Comment>()
+                .HasKey(c => c.Id);
+
+
+            // ============================
+            // Category Primary Key
+            // ============================
+
+            modelBuilder.Entity<Category>()
+                .HasKey(c => c.Id);
+
+
+            // ============================
+            // Tag Primary Key
+            // ============================
+
+            modelBuilder.Entity<Tag>()
+                .HasKey(t => t.Id);
+
+
+            // ============================
+            // PostTag Composite Primary Key
+            // ============================
+
+            modelBuilder.Entity<PostTag>()
+                .HasKey(pt => new
+                {
+                    pt.PostId,
+                    pt.TagId
+                });
+
+
+            // ============================
+            // User -> Posts
+            // One User has Many Posts
+            // ============================
+
+            modelBuilder.Entity<Post>()
+                .HasOne(p => p.User)
+                .WithMany(u => u.Posts)
+                .HasForeignKey(p => p.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+
+            // ============================
+            // Category -> Posts
+            // One Category has Many Posts
+            // ============================
+
             modelBuilder.Entity<Post>()
                 .HasOne(p => p.Category)
                 .WithMany(c => c.Posts)
                 .HasForeignKey(p => p.CategoryId)
                 .OnDelete(DeleteBehavior.Restrict);
 
+
             // ============================
-            // Post -> Comments (One-to-Many)
+            // Post -> Comments
+            // One Post has Many Comments
             // ============================
+
             modelBuilder.Entity<Comment>()
                 .HasOne(c => c.Post)
                 .WithMany(p => p.Comments)
                 .HasForeignKey(c => c.PostId)
-                .OnDelete(DeleteBehavior.Cascade);    // post delete ho to uske comments bhi delete hon
+                .OnDelete(DeleteBehavior.Cascade);
+
 
             // ============================
-            // User -> Comments (One-to-Many)
+            // User -> Comments
+            // One User has Many Comments
             // ============================
+
             modelBuilder.Entity<Comment>()
                 .HasOne(c => c.User)
                 .WithMany(u => u.Comments)
                 .HasForeignKey(c => c.UserId)
                 .OnDelete(DeleteBehavior.Restrict);
 
+
             // ============================
-            // Post <-> Tag (Many-to-Many via PostTag)
+            // PostTag -> Post
             // ============================
-            modelBuilder.Entity<PostTag>()
-                .HasKey(pt => new { pt.PostId, pt.TagId });   // composite primary key
 
             modelBuilder.Entity<PostTag>()
                 .HasOne(pt => pt.Post)
                 .WithMany(p => p.PostTags)
-                .HasForeignKey(pt => pt.PostId);
+                .HasForeignKey(pt => pt.PostId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+
+            // ============================
+            // PostTag -> Tag
+            // ============================
 
             modelBuilder.Entity<PostTag>()
                 .HasOne(pt => pt.Tag)
                 .WithMany(t => t.PostTags)
-                .HasForeignKey(pt => pt.TagId);
+                .HasForeignKey(pt => pt.TagId)
+                .OnDelete(DeleteBehavior.Cascade);
+
 
             // ============================
-            // Unique constraints (optional but good practice)
+            // User Email Unique
             // ============================
+
             modelBuilder.Entity<User>()
                 .HasIndex(u => u.Email)
                 .IsUnique();
+
+
+            // ============================
+            // User Username Unique
+            // ============================
 
             modelBuilder.Entity<User>()
                 .HasIndex(u => u.Username)

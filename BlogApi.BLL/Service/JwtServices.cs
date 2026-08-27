@@ -25,59 +25,26 @@ namespace EMSBLL.Services
 
             var claims = new List<Claim>
             {
-                new Claim(
-                    ClaimTypes.NameIdentifier,
-                    user.Id.ToString()
-                ),
-
-                new Claim(
-                    ClaimTypes.Name,
-                    user.Username
-                ),
-
-                new Claim(
-                    ClaimTypes.Email,
-                    user.Email
-                ),
-
-                new Claim(
-                    ClaimTypes.Role,
-                    user.Role
-                ),
-
-                new Claim(
-                    "UserId",
-                    user.Id.ToString()
-                )
+                new Claim(ClaimTypes.NameIdentifier,user.User_id.ToString()),
+                new Claim(ClaimTypes.Name,user.Username),
+                new Claim(ClaimTypes.Email,user.Email),
+                new Claim(ClaimTypes.Role,user.Role)
             };
 
-            var securityKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(key!)
-            );
+            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key!));
 
-            var credentials = new SigningCredentials(
-                securityKey,
-                SecurityAlgorithms.HmacSha256
-            );
+            var credentials = new SigningCredentials(securityKey,SecurityAlgorithms.HmacSha256);
 
-            var token = new JwtSecurityToken(
+            var token = new JwtSecurityToken(    
+
                 issuer: _configuration["JwtSettings:Issuer"],
-
                 audience: _configuration["JwtSettings:Audience"],
-
                 claims: claims,
-
-                expires: DateTime.UtcNow.AddMinutes(
-                    Convert.ToDouble(
-                        _configuration["JwtSettings:ExpiryInMinutes"]
-                    )
-                ),
-
+                expires: DateTime.UtcNow.AddMinutes(Convert.ToDouble(_configuration["JwtSettings:ExpiryInMinutes"])),
                 signingCredentials: credentials
             );
 
-            return new JwtSecurityTokenHandler()
-                .WriteToken(token);
+            return new JwtSecurityTokenHandler().WriteToken(token);
         }
     }
 }

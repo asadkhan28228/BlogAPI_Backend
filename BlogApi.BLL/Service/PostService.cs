@@ -1,104 +1,243 @@
-﻿using BlogApi.BLL.DTOs.Post;
-using BlogApi.BLL.Interfaces;
-using BlogApi.DAL.Entities;
-using BlogApi.DAL.InterfacesRepositories;
+﻿//using BlogApi.BLL.DTOs.Post;
+//using BlogApi.BLL.Interfaces;
+//using BlogApi.DAL.Entities;
+//using BlogApi.DAL.InterfacesRepositories;
 
-namespace BlogApi.BLL.Services
-{
-    public class PostService : IPostService
-    {
-        private readonly IPostRepository _postRepository;
+//namespace BlogApi.BLL.Services
+//{
+//    public class PostService : IPostService
+//    {
+//        private readonly IPostRepository _postRepository;
 
-        public PostService(IPostRepository postRepository)
-        {
-            _postRepository = postRepository;
-        }
+//        public PostService(IPostRepository postRepository)
+//        {
+//            _postRepository = postRepository;
+//        }
 
-        public async Task<IEnumerable<PostDto>> GetAllAsync()
-        {
-            var posts = await _postRepository.GetAllAsync();
+//        //// ============================
+//        // GET ALL POSTS
+//        // ============================
+//        public async Task<IEnumerable<PostDto>> GetAllAsync()
+//        {
+//            var posts = await _postRepository.GetAllAsync();
 
-            return posts.Select(MapToDto);
-        }
+//            if (posts == null || !posts.Any())
+//            {
+//                return Enumerable.Empty<PostDto>();
+//            }
 
-        public async Task<PostDto?> GetByIdAsync(int id)
-        {
-            var post = await _postRepository.GetByIdAsync(id);
+//            return posts.Select(MapToDto);
+//        }
 
-            if (post == null)
-            {
-                return null;
 
-            }
+//        // ============================
+//        // GET POST BY ID
+//        // ============================
+//        public async Task<PostDto?> GetByIdAsync(int id)
+//        {
+//            // ID valid honi chahiye
+//            if (id <= 0)
+//            {
+//                return null;
+//            }
 
-            return MapToDto(post);
-        }
+//            var post = await _postRepository.GetByIdAsync(id);
 
-        public async Task<PostDto> CreateAsync(CreatePostDto dto, int userId)
-        {
-            var post = new Post
-            {
-                Title = dto.Title,
-                Content = dto.Content,
-                Userid = userId,
-                CreatedAt = DateTime.UtcNow
-            };
+//            // Post nahi mila
+//            if (post == null)
+//            {
+//                return null;
+//            }
 
-            var createdPost = await _postRepository.AddAsync(post);
+//            return MapToDto(post);
+//        }
 
-            return MapToDto(createdPost);
-        }
 
-        public async Task<bool> UpdateAsync(
-            int id,
-            UpdatePostDto dto,
-            int userId)
-        {
-            var post = await _postRepository.GetByIdAsync(id);
+//        // ============================
+//        // CREATE POST
+//        // ============================
+//        public async Task<PostDto> CreateAsync(
+//            CreatePostDto dto,
+//            int userId)
+//        {
+//            // User ID valid honi chahiye
+//            if (userId <= 0)
+//            {
+//                throw new ArgumentException("Invalid user ID.");
+//            }
 
-            if (post == null)
-                return false;
+//            // DTO null check
+//            if (dto == null)
+//            {
+//                throw new ArgumentNullException(nameof(dto));
+//            }
 
-            // User can update only his own post
-            if (post.Userid != userId)
-                return false;
+//            // Title validation
+//            if (string.IsNullOrWhiteSpace(dto.Title))
+//            {
+//                throw new ArgumentException("Post title is required.");
+//            }
 
-            post.Title = dto.Title;
-            post.Content = dto.Content;
-            post.UpdatedAt = DateTime.UtcNow;
+//            // Content validation
+//            if (string.IsNullOrWhiteSpace(dto.Content))
+//            {
+//                throw new ArgumentException("Post content is required.");
+//            }
 
-            await _postRepository.UpdateAsync(post);
+            
 
-            return true;
-        }
+//            var post = new Post
+//            {
+//                Title = dto.Title.Trim(),
 
-        public async Task<bool> DeleteAsync(int id, int userId)
-        {
-            var post = await _postRepository.GetByIdAsync(id);
+//                Content = dto.Content.Trim(),
 
-            if (post == null)
-                return false;
+//                // Aapke Post entity mein AuthorId hai
+//                AuthorId = userId,
 
-            // User can delete only his own post
-            if (post.Userid != userId)
-                return false;
+      
 
-            await _postRepository.DeleteAsync(id);
+//                CreatedAt = DateTime.UtcNow,
 
-            return true;
-        }
+//                IsPublished = false,
 
-        private static PostDto MapToDto(Post post)
-        {
-            return new PostDto
-            {
-                Id = post.Id,
-                Title = post.Title,
-                Content = post.Content,
-                UserId = post.Userid,
-                CreatedAt = post.CreatedAt,
-                UpdatedAt = post.UpdatedAt
-            };
-        }
-    }
-}
+//                // Simple slug
+//                Slug = dto.Title
+//                    .Trim()
+//                    .ToLower()
+//                    .Replace(" ", "-")
+//            };
+
+//            var createdPost = await _postRepository.AddAsync(post);
+
+//            return MapToDto(createdPost);
+//        }
+
+
+//        // ============================
+//        // UPDATE POST
+//        // ============================
+//        public async Task<bool> UpdateAsync(
+//            int id,
+//            UpdatePostDto dto,
+//            int userId)
+//        {
+//            // ID check
+//            if (id <= 0)
+//            {
+//                return false;
+//            }
+
+//            // User ID check
+//            if (userId <= 0)
+//            {
+//                return false;
+//            }
+
+//            // DTO check
+//            if (dto == null)
+//            {
+//                return false;
+//            }
+
+//            // Title check
+//            if (string.IsNullOrWhiteSpace(dto.Title))
+//            {
+//                return false;
+//            }
+
+//            // Content check
+//            if (string.IsNullOrWhiteSpace(dto.Content))
+//            {
+//                return false;
+//            }
+
+//            var post = await _postRepository.GetByIdAsync(id);
+
+//            // Post exist nahi karta
+//            if (post == null)
+//            {
+//                return false;
+//            }
+
+//            // IMPORTANT:
+//            // Sirf jis user ka post hai wahi update kar sakta hai
+//            if (post.AuthorId != userId)
+//            {
+//                return false;
+//            }
+
+//            post.Title = dto.Title.Trim();
+
+//            post.Content = dto.Content.Trim();
+
+//            post.UpdatedAt = DateTime.UtcNow;
+
+//            await _postRepository.UpdateAsync(post);
+
+//            return true;
+//        }
+
+
+//        // ============================
+//        // DELETE POST
+//        // ============================
+//        public async Task<bool> DeleteAsync(
+//            int id,
+//            int userId)
+//        {
+//            // ID check
+//            if (id <= 0)
+//            {
+//                return false;
+//            }
+
+//            // User ID check
+//            if (userId <= 0)
+//            {
+//                return false;
+//            }
+
+//            var post = await _postRepository.GetByIdAsync(id);
+
+//            // Post nahi mila
+//            if (post == null)
+//            {
+//                return false;
+//            }
+
+//            // IMPORTANT:
+//            // Sirf owner apna post delete kar sakta hai
+//            if (post.AuthorId != userId)
+//            {
+//                return false;
+//            }
+
+//            await _postRepository.DeleteAsync(id);
+
+//            return true;
+//        }
+
+
+//        // ============================
+//        // ENTITY -> DTO
+//        // ============================
+//        private static PostDto MapToDto(Post post)
+//        {
+//            return new PostDto
+//            {
+//                Id = post.Id,
+
+//                Title = post.Title,
+
+//                Content = post.Content,
+
+//                UserId = post.AuthorId,
+
+//                CreatedAt = post.CreatedAt,
+
+//                UpdatedAt = post.UpdatedAt
+//            };
+//        }
+//    }
+//}

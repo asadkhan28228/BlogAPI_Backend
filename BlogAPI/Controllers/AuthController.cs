@@ -33,7 +33,7 @@ namespace BlogAPI.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login(LoginDto dto)
         {
-            try
+           try
             {
                 var result = await _authService.LoginAsync(dto);
                 return Ok(result);
@@ -43,7 +43,7 @@ namespace BlogAPI.Controllers
                 return BadRequest(new { message = ex.Message });
             }
         }
-    }
+}
 }
 
 
