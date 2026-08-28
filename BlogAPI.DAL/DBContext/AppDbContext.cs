@@ -67,16 +67,6 @@ namespace BlogAPI.DAL.Data
                 .HasKey(t => t.Id);
 
 
-            // ============================
-            // PostTag Composite Primary Key
-            // ============================
-
-            modelBuilder.Entity<PostTag>()
-                .HasKey(pt => new
-                {
-                    pt.PostId,
-                    pt.TagId
-                });
 
 
             // ============================
@@ -148,6 +138,16 @@ namespace BlogAPI.DAL.Data
                 .HasForeignKey(pt => pt.TagId)
                 .OnDelete(DeleteBehavior.Cascade);
 
+            // ============================
+            // PostTag Composite Primary Key
+            // ============================
+
+            modelBuilder.Entity<PostTag>()
+                .HasKey(pt => new
+                {
+                    pt.PostId,
+                    pt.TagId
+                });
 
             // ============================
             // User Email Unique

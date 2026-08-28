@@ -2,9 +2,10 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace BlogApi.BLL.Dtos.Tag
+namespace BlogApi.BLL.DTOs.Tag
 {
-    internal class UpdateTagDto
+    public class UpdateTagDto
     {
+        public string Name { get; set; }
     }
 }
