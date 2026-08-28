@@ -301,5 +301,30 @@ namespace BlogApi.BLL.Services
                 .ToLower()
                 .Replace(" ", "-");
         }
+
+        // ==========================================
+        // SEARCH POSTS
+        // ==========================================
+
+        public async Task<IEnumerable<PostDto>> SearchAsync(
+            string keyword)
+        {
+            if (string.IsNullOrWhiteSpace(keyword))
+            {
+                return Enumerable.Empty<PostDto>();
+            }
+
+            keyword = keyword.Trim();
+
+            var posts =
+                await _postRepository.SearchAsync(keyword);
+
+            if (posts == null || !posts.Any())
+            {
+                return Enumerable.Empty<PostDto>();
+            }
+
+            return posts.Select(MapToDto);
+        }
     }
 }

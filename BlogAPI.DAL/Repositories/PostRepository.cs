@@ -67,5 +67,16 @@ namespace BlogApi.DAL.Repositories
 
             await _context.SaveChangesAsync();
         }
+
+        // SEARCH POSTS
+        public async Task<IEnumerable<Post>> SearchAsync(string keyword)
+        {
+            return await _context.Posts
+                .Where(p =>
+                    p.Title.Contains(keyword) ||
+                    p.Content.Contains(keyword))
+                .OrderByDescending(p => p.CreatedAt)
+                .ToListAsync();
+        }
     }
 }

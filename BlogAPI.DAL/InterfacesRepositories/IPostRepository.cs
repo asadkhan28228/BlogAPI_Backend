@@ -8,6 +8,8 @@ namespace BlogApi.DAL.InterfacesRepositories
 
         Task<Post?> GetByIdAsync(int id);
 
+        Task<IEnumerable<Post>> SearchAsync(string keyword);
+
         Task<Post> AddAsync(Post post);
 
         Task UpdateAsync(Post post);
