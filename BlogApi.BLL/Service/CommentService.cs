@@ -1,4 +1,5 @@
 ﻿using BlogApi.BLL.Dtos.Comment;
+using BlogApi.BLL.DTOs.Comment;
 using BlogApi.BLL.Interfaces;
 using BlogApi.DAL.Entities;
 using BlogApi.DAL.InterfacesRepositories;

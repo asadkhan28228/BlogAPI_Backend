@@ -326,5 +326,94 @@ namespace BlogApi.BLL.Services
 
             return posts.Select(MapToDto);
         }
+
+        // ==========================================
+        // SEARCH + FILTER + PAGINATION
+        // ==========================================
+
+        public async Task<PostPagedResultDto> GetPagedAsync(
+            int page,
+            int pageSize,
+            string? keyword,
+            int? categoryId)
+        {
+            // PAGE VALIDATION
+            if (page <= 0)
+            {
+                page = 1;
+            }
+
+            // PAGE SIZE VALIDATION
+            if (pageSize <= 0)
+            {
+                pageSize = 10;
+            }
+
+            // Maximum page size
+            if (pageSize > 100)
+            {
+                pageSize = 100;
+            }
+
+            // CATEGORY VALIDATION
+            if (categoryId.HasValue &&
+                categoryId.Value <= 0)
+            {
+                categoryId = null;
+            }
+
+            // Clean keyword
+            if (!string.IsNullOrWhiteSpace(keyword))
+            {
+                keyword = keyword.Trim();
+            }
+            else
+            {
+                keyword = null;
+            }
+
+            // =========================
+            // GET TOTAL COUNT
+            // =========================
+
+            var totalItems =
+                await _postRepository.GetFilteredCountAsync(
+                    keyword,
+                    categoryId);
+
+            // =========================
+            // GET POSTS
+            // =========================
+
+            var posts =
+                await _postRepository.GetFilteredPagedAsync(
+                    keyword,
+                    categoryId,
+                    page,
+                    pageSize);
+
+            // =========================
+            // TOTAL PAGES
+            // =========================
+
+            var totalPages =
+                totalItems == 0
+                    ? 0
+                    : (int)Math.Ceiling(
+                        totalItems / (double)pageSize);
+
+            return new PostPagedResultDto
+            {
+                Items = posts.Select(MapToDto),
+
+                Page = page,
+
+                PageSize = pageSize,
+
+                TotalItems = totalItems,
+
+                TotalPages = totalPages
+            };
+        }
     }
 }

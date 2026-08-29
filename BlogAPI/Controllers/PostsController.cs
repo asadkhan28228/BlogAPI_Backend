@@ -18,17 +18,27 @@ namespace BlogApi.PL.Controllers
             _postService = postService;
         }
 
+
         // =========================
-        // GET ALL POSTS
+        // GET POSTS
+        // SEARCH + FILTER + PAGINATION
         // =========================
         [HttpGet]
-        public async Task<IActionResult> GetAll()
+        public async Task<IActionResult> GetAll(
+            [FromQuery] string? keyword,
+            [FromQuery] int? categoryId,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 10)
         {
-            var posts = await _postService.GetAllAsync();
+            var result =
+                await _postService.GetPagedAsync(
+                    page,
+                    pageSize,
+                    keyword,
+                    categoryId);
 
-            return Ok(posts);
+            return Ok(result);
         }
-
         // =========================
         // GET POST BY ID
         // =========================
@@ -190,5 +200,7 @@ namespace BlogApi.PL.Controllers
 
             return userIdValue;
         }
+
+        
     }
 }

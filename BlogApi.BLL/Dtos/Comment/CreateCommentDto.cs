@@ -1,10 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.ComponentModel.DataAnnotations;
 
-public class CreateCommentDto
+namespace BlogApi.BLL.DTOs.Comment
 {
-    public int PostId { get; set; }
+    public class CreateCommentDto
+    {
+        [Required(ErrorMessage = "Comment content is required.")]
+        [StringLength(1000, MinimumLength = 1,
+            ErrorMessage = "Comment must be between 1 and 1000 characters.")]
+        public string Content { get; set; } = string.Empty;
 
-    public string Content { get; set; }
+        [Range(1, int.MaxValue,
+            ErrorMessage = "Valid post ID is required.")]
+        public int PostId { get; set; }
+    }
 }

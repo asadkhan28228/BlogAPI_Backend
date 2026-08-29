@@ -8,6 +8,15 @@ namespace BlogApi.BLL.Interfaces
 
         Task<PostDto?> GetByIdAsync(int id);
 
+        Task<IEnumerable<PostDto>> SearchAsync(
+            string keyword);
+
+        Task<PostPagedResultDto> GetPagedAsync(
+            int page,
+            int pageSize,
+            string? keyword,
+            int? categoryId);
+
         Task<PostDto> CreateAsync(
             CreatePostDto dto,
             int userId);

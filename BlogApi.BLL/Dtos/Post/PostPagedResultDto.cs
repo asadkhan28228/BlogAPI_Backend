@@ -1,0 +1,19 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Text;
+
+namespace BlogApi.BLL.DTOs.Post
+{
+    public class PostPagedResultDto
+    {
+        public IEnumerable<PostDto> Items { get; set; }
+
+        public int Page { get; set; }
+
+        public int PageSize { get; set; }
+
+        public int TotalItems { get; set; }
+
+        public int TotalPages { get; set; }
+    }
+}

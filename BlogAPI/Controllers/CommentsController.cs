@@ -1,4 +1,5 @@
-﻿using BlogApi.BLL.Interfaces;
+﻿using BlogApi.BLL.DTOs.Comment;
+using BlogApi.BLL.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -24,8 +25,7 @@ namespace BlogApi.PL.Controllers
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
-            var comments =
-                await _commentService.GetAllAsync();
+            var comments =await _commentService.GetAllAsync();
 
             return Ok(comments);
         }
@@ -34,42 +34,34 @@ namespace BlogApi.PL.Controllers
         // GET COMMENTS BY POST
         // =========================
         [HttpGet("post/{postId}")]
-        public async Task<IActionResult> GetByPostId(
-            int postId)
+        public async Task<IActionResult> GetByPostId(int postId)
         {
             if (postId <= 0)
             {
-                return BadRequest(
-                    "Invalid post ID.");
+                return BadRequest("Invalid post ID.");
             }
 
             var comments =
-                await _commentService.GetByPostIdAsync(
-                    postId);
-
-            return Ok(comments);
+                await _commentService.GetByPostIdAsync(postId);
+                return Ok(comments);
         }
 
         // =========================
         // GET COMMENT BY ID
         // =========================
         [HttpGet("{id}")]
-        public async Task<IActionResult> GetById(
-            int id)
+        public async Task<IActionResult> GetById(int id)
         {
             if (id <= 0)
             {
-                return BadRequest(
-                    "Invalid comment ID.");
+                return BadRequest("Invalid comment ID.");
             }
 
-            var comment =
-                await _commentService.GetByIdAsync(id);
+            var comment =await _commentService.GetByIdAsync(id);
 
             if (comment == null)
             {
-                return NotFound(
-                    "Comment not found.");
+                return NotFound("Comment not found.");
             }
 
             return Ok(comment);
@@ -79,34 +71,25 @@ namespace BlogApi.PL.Controllers
         // CREATE COMMENT
         // =========================
         [HttpPost]
-        public async Task<IActionResult> Create(
-            [FromBody] CreateCommentDto dto)
+        public async Task<IActionResult> Create([FromBody] CreateCommentDto dto)
         {
             if (dto == null)
             {
-                return BadRequest(
-                    "Comment data is required.");
+                return BadRequest("Comment data is required.");
             }
 
             var userId = GetCurrentUserId();
 
             if (userId == null)
             {
-                return Unauthorized(
-                    "User ID not found.");
+                return Unauthorized("User ID not found.");
             }
 
             try
             {
-                var comment =
-                    await _commentService.CreateAsync(
-                        dto,
-                        userId.Value);
+                var comment =await _commentService.CreateAsync(dto,userId.Value);
 
-                return CreatedAtAction(
-                    nameof(GetById),
-                    new { id = comment.Id },
-                    comment);
+                return CreatedAtAction(nameof(GetById),new { id = comment.Id },comment);
             }
             catch (ArgumentException ex)
             {
@@ -118,44 +101,33 @@ namespace BlogApi.PL.Controllers
         // UPDATE COMMENT
         // =========================
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update(
-            int id,
-            [FromBody] UpdateCommentDto dto)
+        public async Task<IActionResult> Update(int id,[FromBody] UpdateCommentDto dto)
         {
             if (id <= 0)
             {
-                return BadRequest(
-                    "Invalid comment ID.");
+                return BadRequest("Invalid comment ID.");
             }
 
             if (dto == null)
             {
-                return BadRequest(
-                    "Comment data is required.");
+                return BadRequest("Comment data is required.");
             }
 
             var userId = GetCurrentUserId();
 
             if (userId == null)
             {
-                return Unauthorized(
-                    "User ID not found.");
+                return Unauthorized("User ID not found.");
             }
 
-            var result =
-                await _commentService.UpdateAsync(
-                    id,
-                    dto,
-                    userId.Value);
+            var result =await _commentService.UpdateAsync(id,dto,userId.Value);
 
             if (!result)
             {
-                return NotFound(
-                    "Comment not found or you are not the owner.");
+                return NotFound("Comment not found or you are not the owner.");
             }
 
-            return Ok(
-                "Comment updated successfully.");
+            return Ok("Comment updated successfully.");
         }
 
         // =========================
