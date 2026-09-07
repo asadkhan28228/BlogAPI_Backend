@@ -11,17 +11,10 @@ namespace BlogApi.BLL.Interfaces
 
         Task<CommentDto?> GetByIdAsync(int id);
 
-        Task<CommentDto> CreateAsync(
-            CreateCommentDto dto,
-            int userId);
+        Task<CommentDto> CreateAsync(CreateCommentDto dto, int userId);
 
-        Task<bool> UpdateAsync(
-            int id,
-            UpdateCommentDto dto,
-            int userId);
+        Task<bool> UpdateAsync(int id, UpdateCommentDto dto, int userId);
 
-        Task<bool> DeleteAsync(
-            int id,
-            int userId);
+        Task<bool> DeleteAsync(int id, int userId, bool isAdmin = false);
     }
 }

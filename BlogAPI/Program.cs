@@ -102,6 +102,7 @@ try
     builder.Services.AddScoped<ITagRepository, TagRepository>();
     builder.Services.AddScoped<IPostTagRepository, PostTagRepository>();
 
+    builder.Services.AddScoped<IUserService, UserService>();
     builder.Services.AddScoped<IPostTagService, PostTagService>();
     builder.Services.AddScoped<ITagService, TagService>();
     builder.Services.AddScoped<ICommentRepository, CommentRepository>();

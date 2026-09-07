@@ -1,4 +1,5 @@
-﻿using BlogApi.BLL.DTOs.Post;
+﻿using BlogApi.BLL.Common;
+using BlogApi.BLL.DTOs.Post;
 using BlogApi.BLL.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -18,11 +19,6 @@ namespace BlogApi.PL.Controllers
             _postService = postService;
         }
 
-
-        // =========================
-        // GET POSTS
-        // SEARCH + FILTER + PAGINATION
-        // =========================
         [HttpGet]
         public async Task<IActionResult> GetAll(
             [FromQuery] string? keyword,
@@ -30,18 +26,11 @@ namespace BlogApi.PL.Controllers
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 10)
         {
-            var result =
-                await _postService.GetPagedAsync(
-                    page,
-                    pageSize,
-                    keyword,
-                    categoryId);
+            var result = await _postService.GetPagedAsync(page, pageSize, keyword, categoryId);
 
             return Ok(result);
         }
-        // =========================
-        // GET POST BY ID
-        // =========================
+
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
@@ -60,12 +49,8 @@ namespace BlogApi.PL.Controllers
             return Ok(post);
         }
 
-        // =========================
-        // CREATE POST
-        // =========================
         [HttpPost]
-        public async Task<IActionResult> Create(
-            [FromBody] CreatePostDto dto)
+        public async Task<IActionResult> Create([FromBody] CreatePostDto dto)
         {
             if (dto == null)
             {
@@ -81,16 +66,9 @@ namespace BlogApi.PL.Controllers
 
             try
             {
-                var post = await _postService.CreateAsync(
-                    dto,
-                    userId.Value
-                );
+                var post = await _postService.CreateAsync(dto, userId.Value);
 
-                return CreatedAtAction(
-                    nameof(GetById),
-                    new { id = post.Id },
-                    post
-                );
+                return CreatedAtAction(nameof(GetById), new { id = post.Id }, post);
             }
             catch (ArgumentException ex)
             {
@@ -98,13 +76,8 @@ namespace BlogApi.PL.Controllers
             }
         }
 
-        // =========================
-        // UPDATE POST
-        // =========================
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update(
-            int id,
-            [FromBody] UpdatePostDto dto)
+        public async Task<IActionResult> Update(int id, [FromBody] UpdatePostDto dto)
         {
             if (id <= 0)
             {
@@ -123,25 +96,18 @@ namespace BlogApi.PL.Controllers
                 return Unauthorized("User ID not found.");
             }
 
-            var result = await _postService.UpdateAsync(
-                id,
-                dto,
-                userId.Value
-            );
+            var isAdmin = User.IsInRole(Roles.Admin);
+
+            var result = await _postService.UpdateAsync(id, dto, userId.Value, isAdmin);
 
             if (!result)
             {
-                return NotFound(
-                    "Post not found, category not found, or you are not the owner."
-                );
+                return NotFound("Post not found, category not found, or you are not the owner.");
             }
 
             return Ok("Post updated successfully.");
         }
 
-        // =========================
-        // DELETE POST
-        // =========================
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
@@ -157,38 +123,28 @@ namespace BlogApi.PL.Controllers
                 return Unauthorized("User ID not found.");
             }
 
-            var result = await _postService.DeleteAsync(
-                id,
-                userId.Value
-            );
+            var isAdmin = User.IsInRole(Roles.Admin);
+
+            var result = await _postService.DeleteAsync(id, userId.Value, isAdmin);
 
             if (!result)
             {
-                return NotFound(
-                    "Post not found or you are not the owner."
-                );
+                return NotFound("Post not found or you are not the owner.");
             }
 
             return Ok("Post deleted successfully.");
         }
 
-        // =========================
-        // GET USER ID FROM JWT
-        // =========================
         private int? GetCurrentUserId()
         {
-            var userId = User.FindFirstValue(
-                ClaimTypes.NameIdentifier
-            );
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
             if (string.IsNullOrWhiteSpace(userId))
             {
                 return null;
             }
 
-            if (!int.TryParse(
-                    userId,
-                    out int userIdValue))
+            if (!int.TryParse(userId, out int userIdValue))
             {
                 return null;
             }
@@ -200,7 +156,5 @@ namespace BlogApi.PL.Controllers
 
             return userIdValue;
         }
-
-        
     }
 }

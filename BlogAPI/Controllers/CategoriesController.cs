@@ -1,4 +1,5 @@
-﻿using BlogApi.BLL.DTOs.Category;
+﻿using BlogApi.BLL.Common;
+using BlogApi.BLL.DTOs.Category;
 using BlogApi.BLL.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -7,7 +8,7 @@ namespace BlogApi.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize]
+    [Authorize] // Read karne ke liye koi bhi logged-in user
     public class CategoriesController : ControllerBase
     {
         private readonly ICategoryService _categoryService;
@@ -49,6 +50,7 @@ namespace BlogApi.API.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = Roles.Admin)]
         public async Task<IActionResult> Create(CreateCategoryDto dto)
         {
             try
@@ -68,6 +70,7 @@ namespace BlogApi.API.Controllers
         }
 
         [HttpPut("{id}")]
+        [Authorize(Roles = Roles.Admin)]
         public async Task<IActionResult> Update(int id, UpdateCategoryDto dto)
         {
             if (id <= 0)
@@ -86,6 +89,7 @@ namespace BlogApi.API.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = Roles.Admin)]
         public async Task<IActionResult> Delete(int id)
         {
             try

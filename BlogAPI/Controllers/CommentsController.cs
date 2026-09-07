@@ -1,5 +1,8 @@
-﻿using BlogApi.BLL.DTOs.Comment;
+﻿using BlogApi.BLL.Common;
+using BlogApi.BLL.DTOs.Comment;
 using BlogApi.BLL.Interfaces;
+using BlogApi.BLL.Services;
+using BlogApi.DAL.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -133,43 +136,38 @@ namespace BlogApi.PL.Controllers
         // =========================
         // DELETE COMMENT
         // =========================
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> Delete(
-            int id)
+     
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> Delete(int id)
+    {
+        if (id <= 0)
         {
-            if (id <= 0)
-            {
-                return BadRequest(
-                    "Invalid comment ID.");
-            }
-
-            var userId = GetCurrentUserId();
-
-            if (userId == null)
-            {
-                return Unauthorized(
-                    "User ID not found.");
-            }
-
-            var result =
-                await _commentService.DeleteAsync(
-                    id,
-                    userId.Value);
-
-            if (!result)
-            {
-                return NotFound(
-                    "Comment not found or you are not the owner.");
-            }
-
-            return Ok(
-                "Comment deleted successfully.");
+            return BadRequest("Invalid comment ID.");
         }
 
-        // =========================
-        // GET USER ID FROM JWT
-        // =========================
-        private int? GetCurrentUserId()
+        var userId = GetCurrentUserId();
+
+        if (userId == null)
+        {
+            return Unauthorized("User ID not found.");
+        }
+
+        var isAdmin = User.IsInRole(Roles.Admin);
+
+        var result = await _commentService.DeleteAsync(id, userId.Value, isAdmin);
+
+        if (!result)
+        {
+            return NotFound("Comment not found or you are not the owner.");
+        }
+
+        return Ok("Comment deleted successfully.");
+    }
+
+    // =========================
+    // GET USER ID FROM JWT
+    // =========================
+    private int? GetCurrentUserId()
         {
             var userId =
                 User.FindFirstValue(

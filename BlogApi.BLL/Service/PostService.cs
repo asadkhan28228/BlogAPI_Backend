@@ -134,11 +134,7 @@ namespace BlogApi.BLL.Services
         }
 
 
-        // ==========================================
-        // UPDATE POST
-        // ==========================================
-
-        public async Task<bool> UpdateAsync(int id,UpdatePostDto dto,int userId)
+        public async Task<bool> UpdateAsync(int id, UpdatePostDto dto, int userId, bool isAdmin = false)
         {
             if (id <= 0)
             {
@@ -172,7 +168,7 @@ namespace BlogApi.BLL.Services
 
 
             // Get Post
-            var post =await _postRepository.GetByIdAsync(id);
+            var post = await _postRepository.GetByIdAsync(id);
 
             if (post == null)
             {
@@ -180,15 +176,15 @@ namespace BlogApi.BLL.Services
             }
 
 
-            // Only Owner Can Update
-            if (post.UserId != userId)
+            // Owner ya Admin hi update kar sakta hai
+            if (post.UserId != userId && !isAdmin)
             {
                 return false;
             }
 
 
             // Check Category
-            var category =await _categoryRepository.GetByIdAsync(dto.CategoryId);
+            var category = await _categoryRepository.GetByIdAsync(dto.CategoryId);
 
             if (category == null)
             {
@@ -220,11 +216,7 @@ namespace BlogApi.BLL.Services
         }
 
 
-        // ==========================================
-        // DELETE POST
-        // ==========================================
-
-        public async Task<bool> DeleteAsync(int id,int userId)
+        public async Task<bool> DeleteAsync(int id, int userId, bool isAdmin = false)
         {
             if (id <= 0)
             {
@@ -238,8 +230,7 @@ namespace BlogApi.BLL.Services
 
 
             // Get Post
-            var post =
-                await _postRepository.GetByIdAsync(id);
+            var post = await _postRepository.GetByIdAsync(id);
 
             if (post == null)
             {
@@ -247,8 +238,8 @@ namespace BlogApi.BLL.Services
             }
 
 
-            // Only Owner Can Delete
-            if (post.UserId != userId)
+            // Owner ya Admin hi delete kar sakta hai
+            if (post.UserId != userId && !isAdmin)
             {
                 return false;
             }
@@ -259,7 +250,6 @@ namespace BlogApi.BLL.Services
 
             return true;
         }
-
 
         // ==========================================
         // MAP ENTITY -> DTO

@@ -1,5 +1,4 @@
 ﻿using BlogApi.DAL.Entities;
-using System.Threading.Tasks;
 
 namespace BlogApi.DAL.InterfacesRepositories
 {
@@ -14,7 +13,9 @@ namespace BlogApi.DAL.InterfacesRepositories
         Task<bool> EmailExistsAsync(string email);
 
         Task<User> AddAsync(User user);
-       
-        
+
+        Task<IEnumerable<User>> GetAllAsync();
+
+        Task UpdateAsync(User user);
     }
 }

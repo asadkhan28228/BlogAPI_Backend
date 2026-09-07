@@ -185,7 +185,8 @@ namespace BlogApi.BLL.Services
         // =========================
         public async Task<bool> DeleteAsync(
             int id,
-            int userId)
+            int userId
+            , bool isAdmin = false)
         {
             if (id <= 0)
             {
@@ -205,8 +206,8 @@ namespace BlogApi.BLL.Services
                 return false;
             }
 
-            // Only comment owner can delete
-            if (comment.UserId != userId)
+            // Owner ya Admin (moderation) hi delete kar sakta hai
+            if (comment.UserId != userId && !isAdmin)
             {
                 return false;
             }
