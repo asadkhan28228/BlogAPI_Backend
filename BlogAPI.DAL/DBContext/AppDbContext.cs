@@ -15,11 +15,18 @@ namespace BlogAPI.DAL.Data
         // ============================
 
         public DbSet<User> Users { get; set; }
+
         public DbSet<Post> Posts { get; set; }
+
         public DbSet<Comment> Comments { get; set; }
+
         public DbSet<Category> Categories { get; set; }
+
         public DbSet<Tag> Tags { get; set; }
+
         public DbSet<PostTag> PostTags { get; set; }
+
+        public DbSet<RefreshToken> RefreshTokens { get; set; }
 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -67,6 +74,12 @@ namespace BlogAPI.DAL.Data
                 .HasKey(t => t.Id);
 
 
+            // ============================
+            // RefreshToken Primary Key
+            // ============================
+
+            modelBuilder.Entity<RefreshToken>()
+                .HasKey(rt => rt.Id);
 
 
             // ============================
@@ -138,8 +151,9 @@ namespace BlogAPI.DAL.Data
                 .HasForeignKey(pt => pt.TagId)
                 .OnDelete(DeleteBehavior.Cascade);
 
+
             // ============================
-            // PostTag Composite Primary Key
+            // PostTag Composite Key
             // ============================
 
             modelBuilder.Entity<PostTag>()
@@ -148,6 +162,7 @@ namespace BlogAPI.DAL.Data
                     pt.PostId,
                     pt.TagId
                 });
+
 
             // ============================
             // User Email Unique
@@ -164,6 +179,27 @@ namespace BlogAPI.DAL.Data
 
             modelBuilder.Entity<User>()
                 .HasIndex(u => u.Username)
+                .IsUnique();
+
+
+            // ============================
+            // User -> RefreshTokens
+            // One User has Many Refresh Tokens
+            // ============================
+
+            modelBuilder.Entity<RefreshToken>()
+                .HasOne(rt => rt.User)
+                .WithMany(u => u.RefreshTokens)
+                .HasForeignKey(rt => rt.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+
+            // ============================
+            // Refresh Token Unique
+            // ============================
+
+            modelBuilder.Entity<RefreshToken>()
+                .HasIndex(rt => rt.Token)
                 .IsUnique();
         }
     }

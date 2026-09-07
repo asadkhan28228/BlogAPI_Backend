@@ -1,4 +1,5 @@
 ﻿using BlogApi.BLL.Dtos.Comment;
+using BlogApi.BLL.DTOs.Comment;
 
 namespace BlogApi.BLL.Interfaces
 {

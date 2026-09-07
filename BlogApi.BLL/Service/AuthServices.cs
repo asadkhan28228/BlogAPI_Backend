@@ -1,82 +1,331 @@
 ﻿using BlogApi.BLL.Dtos.Auth;
-using BlogApi.BLL.Dtos.Auth.BlogAPI.BLL.DTOs;
 using BlogApi.BLL.Interface;
 using BlogApi.DAL.Entities;
 using BlogApi.DAL.InterfacesRepositories;
-using BlogAPI.DAL.Repositories;
+using BlogAPI.DAL.Data;
 using EMSBLL.Interfaces;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 
 namespace BlogAPI.BLL.Services
 {
     public class AuthService : IAuthService
     {
-       private readonly IUserRepository _userRepository;
-        private readonly PasswordHasher<User> _passwordHasher;
-        // 1. Yahan interface use karein aur sahi naam rakhein
-        private readonly IJwtService _jwtServices;
+        private readonly IUserRepository _userRepository;
 
-        // 2. Constructor mein bhi IJwtServices inject karein
-        public AuthService(IUserRepository userRepository, IJwtService jwtServices)
+        private readonly AppDbContext _context;
+
+        private readonly PasswordHasher<User> _passwordHasher;
+
+        private readonly IJwtService _jwtService;
+
+
+        public AuthService(
+            IUserRepository userRepository,
+            AppDbContext context,
+            IJwtService jwtService)
         {
             _userRepository = userRepository;
-            _jwtServices = jwtServices;
+
+            _context = context;
+
+            _jwtService = jwtService;
+
             _passwordHasher = new PasswordHasher<User>();
         }
 
-        public async Task<AuthResponseDto> RegisterAsync(RegisterDto dto)
+
+        // ============================================
+        // REGISTER
+        // ============================================
+
+        public async Task<AuthResponseDto> RegisterAsync(
+            RegisterDto dto)
         {
-            // Business rule: email already registered na ho
-            var existingUser = await _userRepository.GetByEmailAsync(dto.Email);
+            var existingUser =
+                await _userRepository.GetByEmailAsync(dto.Email);
+
+
             if (existingUser != null)
             {
-                throw new Exception("Email already registered.");
+                throw new Exception(
+                    "Email already registered.");
             }
+
+
             var user = new User
             {
                 Username = dto.Username,
+
                 Email = dto.Email,
-                Role = "User"
+
+                Role = "User",
+
+                CreatedAt = DateTime.UtcNow
             };
-           // Password hash karna (kabhi plain text save nahi karte)
-            user.PasswordHash = _passwordHasher.HashPassword(user, dto.Password);
+
+
+            user.PasswordHash =
+                _passwordHasher.HashPassword(
+                    user,
+                    dto.Password);
+
 
             await _userRepository.AddAsync(user);
 
-            // 3. Register mein _jwtServices call karein
-            var token = _jwtServices.GenerateToken(user);
+
+            // Generate tokens
+            var accessToken =
+                _jwtService.GenerateToken(user);
+
+            var refreshToken =
+                CreateRefreshToken(user);
+
+
+            await _context.RefreshTokens.AddAsync(
+                refreshToken);
+
+            await _context.SaveChangesAsync();
+
 
             return new AuthResponseDto
             {
-                Message = "Register successfully."
-                
+                Message = "Registration successful.",
+
+                UserId = user.User_id,
+
+                Email = user.Email,
+
+                Username = user.Username,
+
+                Token = accessToken,
+
+                RefreshToken = refreshToken.Token,
+
+                AccessTokenExpiresAt =
+                    _jwtService.GetTokenExpiration(),
+
+                RefreshTokenExpiresAt =
+                    refreshToken.ExpiresAt
             };
         }
 
-        public async Task<AuthResponseDto> LoginAsync(LoginDto dto)
+
+        // ============================================
+        // LOGIN
+        // ============================================
+
+        public async Task<AuthResponseDto> LoginAsync(
+            LoginDto dto)
         {
-            var user = await _userRepository.GetByEmailAsync(dto.Email);
+            var user =
+                await _userRepository.GetByEmailAsync(dto.Email);
+
+
             if (user == null)
             {
-                return null;
+                throw new UnauthorizedAccessException(
+                    "Invalid email or password.");
             }
 
-            var result = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, dto.Password);
+
+            var result =
+                _passwordHasher.VerifyHashedPassword(
+                    user,
+                    user.PasswordHash,
+                    dto.Password);
+
+
             if (result == PasswordVerificationResult.Failed)
             {
-                return null;
+                throw new UnauthorizedAccessException(
+                    "Invalid email or password.");
             }
 
-            // 4. Login mein bhi _tokenGenerator ki jagah _jwtServices use karein
-            var token = _jwtServices.GenerateToken(user);
+
+            // Generate Access Token
+            var accessToken =
+                _jwtService.GenerateToken(user);
+
+
+            // Generate Refresh Token
+            var refreshToken =
+                CreateRefreshToken(user);
+
+
+            await _context.RefreshTokens.AddAsync(
+                refreshToken);
+
+            await _context.SaveChangesAsync();
+
 
             return new AuthResponseDto
             {
-                Message = "Login successfully.",
+                Message = "Login successful.",
+
                 UserId = user.User_id,
+
                 Email = user.Email,
+
                 Username = user.Username,
-                Token = token
+
+                Token = accessToken,
+
+                RefreshToken = refreshToken.Token,
+
+                AccessTokenExpiresAt =
+                    _jwtService.GetTokenExpiration(),
+
+                RefreshTokenExpiresAt =
+                    refreshToken.ExpiresAt
+            };
+        }
+
+
+        // ============================================
+        // REFRESH TOKEN
+        // ============================================
+
+        public async Task<AuthResponseDto?> RefreshTokenAsync(
+            RefreshTokenRequestDto dto)
+        {
+            var refreshToken =
+                await _context.RefreshTokens
+                    .Include(rt => rt.User)
+                    .FirstOrDefaultAsync(
+                        rt => rt.Token == dto.RefreshToken);
+
+
+            // Token does not exist
+            if (refreshToken == null)
+            {
+                return null;
+            }
+
+
+            // Token already revoked
+            if (refreshToken.IsRevoked)
+            {
+                return null;
+            }
+
+
+            // Token expired
+            if (refreshToken.ExpiresAt <= DateTime.UtcNow)
+            {
+                return null;
+            }
+
+
+            var user = refreshToken.User;
+
+
+            // Revoke old refresh token
+            refreshToken.RevokedAt =
+                DateTime.UtcNow;
+
+
+            // Generate new access token
+            var newAccessToken =
+                _jwtService.GenerateToken(user);
+
+
+            // Generate new refresh token
+            var newRefreshToken =
+                CreateRefreshToken(user);
+
+
+            await _context.RefreshTokens.AddAsync(
+                newRefreshToken);
+
+
+            await _context.SaveChangesAsync();
+
+
+            return new AuthResponseDto
+            {
+                Message = "Token refreshed successfully.",
+
+                UserId = user.User_id,
+
+                Email = user.Email,
+
+                Username = user.Username,
+
+                Token = newAccessToken,
+
+                RefreshToken = newRefreshToken.Token,
+
+                AccessTokenExpiresAt =
+                    _jwtService.GetTokenExpiration(),
+
+                RefreshTokenExpiresAt =
+                    newRefreshToken.ExpiresAt
+            };
+        }
+
+
+        // ============================================
+        // REVOKE REFRESH TOKEN / LOGOUT
+        // ============================================
+
+        public async Task<bool> RevokeRefreshTokenAsync(
+            string refreshToken)
+        {
+            var token =
+                await _context.RefreshTokens
+                    .FirstOrDefaultAsync(
+                        rt => rt.Token == refreshToken);
+
+
+            if (token == null)
+            {
+                return false;
+            }
+
+
+            if (token.IsRevoked)
+            {
+                return false;
+            }
+
+
+            token.RevokedAt =
+                DateTime.UtcNow;
+
+
+            await _context.SaveChangesAsync();
+
+
+            return true;
+        }
+
+
+        // ============================================
+        // CREATE REFRESH TOKEN
+        // ============================================
+
+        private RefreshToken CreateRefreshToken(
+            User user)
+        {
+            var refreshTokenDays =
+                7;
+
+
+            return new RefreshToken
+            {
+                Token =
+                    _jwtService.GenerateRefreshToken(),
+
+                UserId =
+                    user.User_id,
+
+                CreatedAt =
+                    DateTime.UtcNow,
+
+                ExpiresAt =
+                    DateTime.UtcNow.AddDays(
+                        refreshTokenDays)
             };
         }
     }
