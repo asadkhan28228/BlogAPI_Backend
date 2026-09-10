@@ -1,8 +1,6 @@
 ﻿using BlogApi.BLL.Common;
 using BlogApi.BLL.DTOs.Comment;
 using BlogApi.BLL.Interfaces;
-using BlogApi.BLL.Services;
-using BlogApi.DAL.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
