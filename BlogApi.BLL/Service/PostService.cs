@@ -1,4 +1,5 @@
-﻿using BlogApi.BLL.DTOs.Post;
+﻿using System.Text.RegularExpressions;
+using BlogApi.BLL.DTOs.Post;
 using BlogApi.BLL.Interfaces;
 using BlogApi.DAL.Entities;
 using BlogApi.DAL.InterfacesRepositories;
@@ -11,7 +12,6 @@ namespace BlogApi.BLL.Services
 
         private readonly ICategoryRepository _categoryRepository;
 
-
         public PostService(
             IPostRepository postRepository,
             ICategoryRepository categoryRepository)
@@ -21,26 +21,22 @@ namespace BlogApi.BLL.Services
             _categoryRepository = categoryRepository;
         }
 
-
         // ==========================================
-        // GET ALL POSTS
+        // GET ALL
         // ==========================================
 
         public async Task<IEnumerable<PostDto>> GetAllAsync()
         {
-            var posts = await _postRepository.GetAllAsync();
+            var posts =
+                await _postRepository.GetAllAsync();
 
-            if (posts == null || !posts.Any())
-            {
-                return Enumerable.Empty<PostDto>();
-            }
-
-            return posts.Select(MapToDto);
+            return posts
+                .Where(p => p.IsPublished)
+                .Select(MapToDto);
         }
 
-
         // ==========================================
-        // GET POST BY ID
+        // GET BY ID
         // ==========================================
 
         public async Task<PostDto?> GetByIdAsync(int id)
@@ -50,9 +46,11 @@ namespace BlogApi.BLL.Services
                 return null;
             }
 
-            var post = await _postRepository.GetByIdAsync(id);
+            var post =
+                await _postRepository.GetByIdAsync(id);
 
-            if (post == null)
+            if (post == null ||
+                !post.IsPublished)
             {
                 return null;
             }
@@ -60,9 +58,37 @@ namespace BlogApi.BLL.Services
             return MapToDto(post);
         }
 
+        // ==========================================
+        // GET BY SLUG
+        // ==========================================
+
+        public async Task<PostDto?> GetBySlugAsync(
+            string slug)
+        {
+            if (string.IsNullOrWhiteSpace(slug))
+            {
+                return null;
+            }
+
+            slug = slug
+                .Trim()
+                .ToLowerInvariant();
+
+            var post =
+                await _postRepository
+                    .GetBySlugAsync(slug);
+
+            if (post == null ||
+                !post.IsPublished)
+            {
+                return null;
+            }
+
+            return MapToDto(post);
+        }
 
         // ==========================================
-        // CREATE POST
+        // CREATE
         // ==========================================
 
         public async Task<PostDto> CreateAsync(
@@ -71,43 +97,52 @@ namespace BlogApi.BLL.Services
         {
             if (userId <= 0)
             {
-                throw new ArgumentException("Invalid user ID.");
+                throw new ArgumentException(
+                    "Invalid user ID.");
             }
 
             if (dto == null)
             {
-                throw new ArgumentNullException(nameof(dto));
+                throw new ArgumentNullException(
+                    nameof(dto));
             }
 
             if (string.IsNullOrWhiteSpace(dto.Title))
             {
-                throw new ArgumentException("Post title is required.");
+                throw new ArgumentException(
+                    "Post title is required.");
             }
 
             if (string.IsNullOrWhiteSpace(dto.Content))
             {
-                throw new ArgumentException("Post content is required.");
+                throw new ArgumentException(
+                    "Post content is required.");
             }
 
             if (dto.CategoryId <= 0)
             {
-                throw new ArgumentException("Valid category ID is required.");
+                throw new ArgumentException(
+                    "Valid category ID is required.");
             }
 
-
-            // Check Category
-            var category =await _categoryRepository.GetByIdAsync(dto.CategoryId);
+            // Check category
+            var category =
+                await _categoryRepository
+                    .GetByIdAsync(dto.CategoryId);
 
             if (category == null)
             {
-                throw new ArgumentException("Category not found.");
+                throw new ArgumentException(
+                    "Category not found.");
             }
-
 
             var title = dto.Title.Trim();
 
             var content = dto.Content.Trim();
 
+            // Generate unique slug
+            var slug =
+                await CreateUniqueSlugAsync(title);
 
             var post = new Post
             {
@@ -123,40 +158,44 @@ namespace BlogApi.BLL.Services
 
                 UpdatedAt = null,
 
-                IsPublished = false,
+                // Automatic publish
+                IsPublished = true,
 
-                Slug = GenerateSlug(title)
+                Slug = slug
             };
 
+            var createdPost =
+                await _postRepository
+                    .AddAsync(post);
 
-            var createdPost =await _postRepository.AddAsync(post);
             return MapToDto(createdPost);
         }
 
+        // ==========================================
+        // UPDATE
+        // ==========================================
 
-        public async Task<bool> UpdateAsync(int id, UpdatePostDto dto, int userId, bool isAdmin = false)
+        public async Task<bool> UpdateAsync(
+            int id,
+            UpdatePostDto dto,
+            int userId,
+            bool isAdmin = false)
         {
-            if (id <= 0)
+            if (id <= 0 ||
+                userId <= 0 ||
+                dto == null)
             {
                 return false;
             }
 
-            if (userId <= 0)
+            if (string.IsNullOrWhiteSpace(
+                dto.Title))
             {
                 return false;
             }
 
-            if (dto == null)
-            {
-                return false;
-            }
-
-            if (string.IsNullOrWhiteSpace(dto.Title))
-            {
-                return false;
-            }
-
-            if (string.IsNullOrWhiteSpace(dto.Content))
+            if (string.IsNullOrWhiteSpace(
+                dto.Content))
             {
                 return false;
             }
@@ -166,96 +205,269 @@ namespace BlogApi.BLL.Services
                 return false;
             }
 
-
-            // Get Post
-            var post = await _postRepository.GetByIdAsync(id);
+            var post =
+                await _postRepository
+                    .GetByIdAsync(id);
 
             if (post == null)
             {
                 return false;
             }
 
-
-            // Owner ya Admin hi update kar sakta hai
-            if (post.UserId != userId && !isAdmin)
+            // Owner OR Admin
+            if (post.UserId != userId &&
+                !isAdmin)
             {
                 return false;
             }
 
-
-            // Check Category
-            var category = await _categoryRepository.GetByIdAsync(dto.CategoryId);
+            // Check category
+            var category =
+                await _categoryRepository
+                    .GetByIdAsync(
+                        dto.CategoryId);
 
             if (category == null)
             {
                 return false;
             }
 
+            var title =
+                dto.Title.Trim();
 
-            var title = dto.Title.Trim();
+            var content =
+                dto.Content.Trim();
 
-            var content = dto.Content.Trim();
-
-
-            // Update fields
             post.Title = title;
 
             post.Content = content;
 
-            post.CategoryId = dto.CategoryId;
+            post.CategoryId =
+                dto.CategoryId;
 
-            post.Slug = GenerateSlug(title);
+            // Generate unique slug
+            post.Slug =
+                await CreateUniqueSlugAsync(
+                    title,
+                    id);
 
-            post.UpdatedAt = DateTime.UtcNow;
+            // Automatic publish
+            post.IsPublished = true;
 
+            post.UpdatedAt =
+                DateTime.UtcNow;
 
-            await _postRepository.UpdateAsync(post);
-
+            await _postRepository
+                .UpdateAsync(post);
 
             return true;
         }
 
+        // ==========================================
+        // DELETE
+        // ==========================================
 
-        public async Task<bool> DeleteAsync(int id, int userId, bool isAdmin = false)
+        public async Task<bool> DeleteAsync(
+            int id,
+            int userId,
+            bool isAdmin = false)
         {
-            if (id <= 0)
+            if (id <= 0 ||
+                userId <= 0)
             {
                 return false;
             }
 
-            if (userId <= 0)
-            {
-                return false;
-            }
-
-
-            // Get Post
-            var post = await _postRepository.GetByIdAsync(id);
+            var post =
+                await _postRepository
+                    .GetByIdAsync(id);
 
             if (post == null)
             {
                 return false;
             }
 
-
-            // Owner ya Admin hi delete kar sakta hai
-            if (post.UserId != userId && !isAdmin)
+            // Owner OR Admin
+            if (post.UserId != userId &&
+                !isAdmin)
             {
                 return false;
             }
 
-
-            await _postRepository.DeleteAsync(id);
-
+            await _postRepository
+                .DeleteAsync(id);
 
             return true;
         }
 
         // ==========================================
-        // MAP ENTITY -> DTO
+        // SEARCH
         // ==========================================
 
-        private static PostDto MapToDto(Post post)
+        public async Task<IEnumerable<PostDto>>
+            SearchAsync(string keyword)
+        {
+            if (string.IsNullOrWhiteSpace(keyword))
+            {
+                return Enumerable.Empty<PostDto>();
+            }
+
+            keyword = keyword.Trim();
+
+            var posts =
+                await _postRepository
+                    .SearchAsync(keyword);
+
+            return posts
+                .Where(p => p.IsPublished)
+                .Select(MapToDto);
+        }
+
+        // ==========================================
+        // PAGINATION + SEARCH + FILTER
+        // ==========================================
+
+        public async Task<PostPagedResultDto>
+            GetPagedAsync(
+                int page,
+                int pageSize,
+                string? keyword,
+                int? categoryId)
+        {
+            // Page
+            if (page <= 0)
+            {
+                page = 1;
+            }
+
+            // Page size
+            if (pageSize <= 0)
+            {
+                pageSize = 10;
+            }
+
+            // Maximum
+            if (pageSize > 100)
+            {
+                pageSize = 100;
+            }
+
+            // Category
+            if (categoryId.HasValue &&
+                categoryId.Value <= 0)
+            {
+                categoryId = null;
+            }
+
+            // Keyword
+            if (!string.IsNullOrWhiteSpace(
+                keyword))
+            {
+                keyword = keyword.Trim();
+            }
+            else
+            {
+                keyword = null;
+            }
+
+            // Count only published
+            var totalItems =
+                await _postRepository
+                    .GetFilteredCountAsync(
+                        keyword,
+                        categoryId,
+                        true);
+
+            // Get only published
+            var posts =
+                await _postRepository
+                    .GetFilteredPagedAsync(
+                        keyword,
+                        categoryId,
+                        page,
+                        pageSize,
+                        true);
+
+            var totalPages =
+                totalItems == 0
+                    ? 0
+                    : (int)Math.Ceiling(
+                        totalItems /
+                        (double)pageSize);
+
+            return new PostPagedResultDto
+            {
+                Items =
+                    posts.Select(MapToDto),
+
+                Page = page,
+
+                PageSize = pageSize,
+
+                TotalItems = totalItems,
+
+                TotalPages = totalPages
+            };
+        }
+
+        // ==========================================
+        // UNIQUE SLUG
+        // ==========================================
+
+        private async Task<string>
+            CreateUniqueSlugAsync(
+                string title,
+                int? excludePostId = null)
+        {
+            var baseSlug =
+                GenerateSlug(title);
+
+            var slug = baseSlug;
+
+            var counter = 2;
+
+            while (await _postRepository
+                .ExistsBySlugAsync(
+                    slug,
+                    excludePostId))
+            {
+                slug =
+                    $"{baseSlug}-{counter}";
+
+                counter++;
+            }
+
+            return slug;
+        }
+
+        // ==========================================
+        // SLUG GENERATOR
+        // ==========================================
+
+        private static string GenerateSlug(
+            string title)
+        {
+            var slug =
+                title
+                    .Trim()
+                    .ToLowerInvariant();
+
+            // Remove special characters
+            slug =
+                Regex.Replace(
+                    slug,
+                    @"[^a-z0-9]+",
+                    "-");
+
+            return slug.Trim('-');
+        }
+
+        // ==========================================
+        // ENTITY -> DTO
+        // ==========================================
+
+        private static PostDto MapToDto(
+            Post post)
         {
             return new PostDto
             {
@@ -267,142 +479,44 @@ namespace BlogApi.BLL.Services
 
                 Slug = post.Slug,
 
-                IsPublished = post.IsPublished,
+                IsPublished =
+                    post.IsPublished,
 
-                UserId = post.UserId,
+                UserId =
+                    post.UserId,
 
-                CategoryId = post.CategoryId,
+                CategoryId =
+                    post.CategoryId,
 
-                CreatedAt = post.CreatedAt
+                CreatedAt =
+                    post.CreatedAt,
 
-                
-            };
-        }
+                UpdatedAt =
+                    post.UpdatedAt,
 
+                Author =
+                    post.User == null
+                        ? null
+                        : new PostAuthorDto
+                        {
+                            Id =
+                                post.User.User_id,
 
-        // ==========================================
-        // GENERATE SLUG
-        // ==========================================
+                            Username =
+                                post.User.Username
+                        },
 
-        private static string GenerateSlug(string title)
-        {
-            return title
-                .Trim()
-                .ToLower()
-                .Replace(" ", "-");
-        }
+                Category =
+                    post.Category == null
+                        ? null
+                        : new PostCategoryDto
+                        {
+                            Id =
+                                post.Category.Id,
 
-        // ==========================================
-        // SEARCH POSTS
-        // ==========================================
-
-        public async Task<IEnumerable<PostDto>> SearchAsync(
-            string keyword)
-        {
-            if (string.IsNullOrWhiteSpace(keyword))
-            {
-                return Enumerable.Empty<PostDto>();
-            }
-
-            keyword = keyword.Trim();
-
-            var posts =
-                await _postRepository.SearchAsync(keyword);
-
-            if (posts == null || !posts.Any())
-            {
-                return Enumerable.Empty<PostDto>();
-            }
-
-            return posts.Select(MapToDto);
-        }
-
-        // ==========================================
-        // SEARCH + FILTER + PAGINATION
-        // ==========================================
-
-        public async Task<PostPagedResultDto> GetPagedAsync(
-            int page,
-            int pageSize,
-            string? keyword,
-            int? categoryId)
-        {
-            // PAGE VALIDATION
-            if (page <= 0)
-            {
-                page = 1;
-            }
-
-            // PAGE SIZE VALIDATION
-            if (pageSize <= 0)
-            {
-                pageSize = 10;
-            }
-
-            // Maximum page size
-            if (pageSize > 100)
-            {
-                pageSize = 100;
-            }
-
-            // CATEGORY VALIDATION
-            if (categoryId.HasValue &&
-                categoryId.Value <= 0)
-            {
-                categoryId = null;
-            }
-
-            // Clean keyword
-            if (!string.IsNullOrWhiteSpace(keyword))
-            {
-                keyword = keyword.Trim();
-            }
-            else
-            {
-                keyword = null;
-            }
-
-            // =========================
-            // GET TOTAL COUNT
-            // =========================
-
-            var totalItems =
-                await _postRepository.GetFilteredCountAsync(
-                    keyword,
-                    categoryId);
-
-            // =========================
-            // GET POSTS
-            // =========================
-
-            var posts =
-                await _postRepository.GetFilteredPagedAsync(
-                    keyword,
-                    categoryId,
-                    page,
-                    pageSize);
-
-            // =========================
-            // TOTAL PAGES
-            // =========================
-
-            var totalPages =
-                totalItems == 0
-                    ? 0
-                    : (int)Math.Ceiling(
-                        totalItems / (double)pageSize);
-
-            return new PostPagedResultDto
-            {
-                Items = posts.Select(MapToDto),
-
-                Page = page,
-
-                PageSize = pageSize,
-
-                TotalItems = totalItems,
-
-                TotalPages = totalPages
+                            Name =
+                                post.Category.Name
+                        }
             };
         }
     }

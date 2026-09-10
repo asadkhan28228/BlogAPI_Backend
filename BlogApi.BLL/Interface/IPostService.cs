@@ -8,6 +8,8 @@ namespace BlogApi.BLL.Interfaces
 
         Task<PostDto?> GetByIdAsync(int id);
 
+        Task<PostDto?> GetBySlugAsync(string slug);
+
         Task<IEnumerable<PostDto>> SearchAsync(string keyword);
 
         Task<PostPagedResultDto> GetPagedAsync(
@@ -16,10 +18,19 @@ namespace BlogApi.BLL.Interfaces
             string? keyword,
             int? categoryId);
 
-        Task<PostDto> CreateAsync(CreatePostDto dto, int userId);
+        Task<PostDto> CreateAsync(
+            CreatePostDto dto,
+            int userId);
 
-        Task<bool> UpdateAsync(int id, UpdatePostDto dto, int userId, bool isAdmin = false);
+        Task<bool> UpdateAsync(
+            int id,
+            UpdatePostDto dto,
+            int userId,
+            bool isAdmin = false);
 
-        Task<bool> DeleteAsync(int id, int userId, bool isAdmin = false);
+        Task<bool> DeleteAsync(
+            int id,
+            int userId,
+            bool isAdmin = false);
     }
 }

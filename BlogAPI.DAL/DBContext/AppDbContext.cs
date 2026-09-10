@@ -49,6 +49,14 @@ namespace BlogAPI.DAL.Data
             modelBuilder.Entity<Post>()
                 .HasKey(p => p.Id);
 
+            // ============================
+            // UNIQUE POST SLUG
+            // ============================
+
+            modelBuilder.Entity<Post>()
+                .HasIndex(p => p.Slug)
+                .IsUnique();
+
 
             // ============================
             // Comment Primary Key

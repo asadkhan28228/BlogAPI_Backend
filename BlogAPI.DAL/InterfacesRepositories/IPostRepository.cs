@@ -8,11 +8,19 @@ namespace BlogApi.DAL.InterfacesRepositories
 
         Task<Post?> GetByIdAsync(int id);
 
-        Task<IEnumerable<Post>> SearchAsync(string keyword);
+        Task<Post?> GetBySlugAsync(string slug);
+
+        Task<bool> ExistsBySlugAsync(
+            string slug,
+            int? excludePostId = null);
+
+        Task<IEnumerable<Post>> SearchAsync(
+            string keyword);
 
         Task<int> GetTotalCountAsync();
 
-        Task<int> GetSearchCountAsync(string keyword);
+        Task<int> GetSearchCountAsync(
+            string keyword);
 
         Task<IEnumerable<Post>> GetPagedAsync(
             int page,
@@ -23,17 +31,17 @@ namespace BlogApi.DAL.InterfacesRepositories
             int page,
             int pageSize);
 
-        // NEW: Filter + Search count
         Task<int> GetFilteredCountAsync(
             string? keyword,
-            int? categoryId);
+            int? categoryId,
+            bool publishedOnly = true);
 
-        // NEW: Filter + Search + Pagination
         Task<IEnumerable<Post>> GetFilteredPagedAsync(
             string? keyword,
             int? categoryId,
             int page,
-            int pageSize);
+            int pageSize,
+            bool publishedOnly = true);
 
         Task<Post> AddAsync(Post post);
 

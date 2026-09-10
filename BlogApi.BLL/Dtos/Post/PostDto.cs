@@ -1,18 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace BlogApi.BLL.DTOs.Post
+﻿namespace BlogApi.BLL.DTOs.Post
 {
     public class PostDto
     {
         public int Id { get; set; }
 
-        public string Title { get; set; }
+        public string Title { get; set; } = string.Empty;
 
-        public string Content { get; set; }
+        public string Content { get; set; } = string.Empty;
 
-        public string Slug { get; set; }
+        public string Slug { get; set; } = string.Empty;
 
         public bool IsPublished { get; set; }
 
@@ -22,6 +18,12 @@ namespace BlogApi.BLL.DTOs.Post
 
         public DateTime CreatedAt { get; set; }
 
-       
+        public DateTime? UpdatedAt { get; set; }
+
+        // Author information
+        public PostAuthorDto? Author { get; set; }
+
+        // Category information
+        public PostCategoryDto? Category { get; set; }
     }
 }

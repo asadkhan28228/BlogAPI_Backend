@@ -17,9 +17,12 @@ namespace BlogApi.DAL.Repositories
         // =========================
         // GET ALL POSTS
         // =========================
+
         public async Task<IEnumerable<Post>> GetAllAsync()
         {
             return await _context.Posts
+                .Include(p => p.User)
+                .Include(p => p.Category)
                 .OrderByDescending(p => p.CreatedAt)
                 .ToListAsync();
         }
@@ -27,22 +30,61 @@ namespace BlogApi.DAL.Repositories
         // =========================
         // GET POST BY ID
         // =========================
+
         public async Task<Post?> GetByIdAsync(int id)
         {
             return await _context.Posts
+                .Include(p => p.User)
+                .Include(p => p.Category)
                 .FirstOrDefaultAsync(p => p.Id == id);
+        }
+
+        // =========================
+        // GET POST BY SLUG
+        // =========================
+
+        public async Task<Post?> GetBySlugAsync(string slug)
+        {
+            return await _context.Posts
+                .Include(p => p.User)
+                .Include(p => p.Category)
+                .FirstOrDefaultAsync(p => p.Slug == slug);
+        }
+
+        // =========================
+        // CHECK SLUG
+        // =========================
+
+        public async Task<bool> ExistsBySlugAsync(
+            string slug,
+            int? excludePostId = null)
+        {
+            var query = _context.Posts
+                .Where(p => p.Slug == slug);
+
+            if (excludePostId.HasValue)
+            {
+                query = query.Where(
+                    p => p.Id != excludePostId.Value);
+            }
+
+            return await query.AnyAsync();
         }
 
         // =========================
         // SEARCH POSTS
         // =========================
+
         public async Task<IEnumerable<Post>> SearchAsync(
             string keyword)
         {
             return await _context.Posts
+                .Include(p => p.User)
+                .Include(p => p.Category)
                 .Where(p =>
-                    p.Title.Contains(keyword) ||
-                    p.Content.Contains(keyword))
+                    p.IsPublished &&
+                    (p.Title.Contains(keyword) ||
+                     p.Content.Contains(keyword)))
                 .OrderByDescending(p => p.CreatedAt)
                 .ToListAsync();
         }
@@ -50,32 +92,41 @@ namespace BlogApi.DAL.Repositories
         // =========================
         // TOTAL POSTS COUNT
         // =========================
+
         public async Task<int> GetTotalCountAsync()
         {
-            return await _context.Posts.CountAsync();
+            return await _context.Posts
+                .Where(p => p.IsPublished)
+                .CountAsync();
         }
 
         // =========================
         // SEARCH COUNT
         // =========================
+
         public async Task<int> GetSearchCountAsync(
             string keyword)
         {
             return await _context.Posts
                 .Where(p =>
-                    p.Title.Contains(keyword) ||
-                    p.Content.Contains(keyword))
+                    p.IsPublished &&
+                    (p.Title.Contains(keyword) ||
+                     p.Content.Contains(keyword)))
                 .CountAsync();
         }
 
         // =========================
         // PAGED POSTS
         // =========================
+
         public async Task<IEnumerable<Post>> GetPagedAsync(
             int page,
             int pageSize)
         {
             return await _context.Posts
+                .Include(p => p.User)
+                .Include(p => p.Category)
+                .Where(p => p.IsPublished)
                 .OrderByDescending(p => p.CreatedAt)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
@@ -85,32 +136,43 @@ namespace BlogApi.DAL.Repositories
         // =========================
         // SEARCH + PAGINATION
         // =========================
+
         public async Task<IEnumerable<Post>> SearchPagedAsync(
             string keyword,
             int page,
             int pageSize)
         {
             return await _context.Posts
+                .Include(p => p.User)
+                .Include(p => p.Category)
                 .Where(p =>
-                    p.Title.Contains(keyword) ||
-                    p.Content.Contains(keyword))
+                    p.IsPublished &&
+                    (p.Title.Contains(keyword) ||
+                     p.Content.Contains(keyword)))
                 .OrderByDescending(p => p.CreatedAt)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
         }
 
-        // =================================================
-        // FILTER + SEARCH COUNT
-        // =================================================
+        // =========================
+        // FILTER COUNT
+        // =========================
+
         public async Task<int> GetFilteredCountAsync(
             string? keyword,
-            int? categoryId)
+            int? categoryId,
+            bool publishedOnly = true)
         {
             var query = _context.Posts
                 .AsQueryable();
 
-            // SEARCH
+            if (publishedOnly)
+            {
+                query = query.Where(
+                    p => p.IsPublished);
+            }
+
             if (!string.IsNullOrWhiteSpace(keyword))
             {
                 query = query.Where(p =>
@@ -118,29 +180,35 @@ namespace BlogApi.DAL.Repositories
                     p.Content.Contains(keyword));
             }
 
-            // CATEGORY FILTER
             if (categoryId.HasValue)
             {
-                query = query.Where(p =>
-                    p.CategoryId == categoryId.Value);
+                query = query.Where(
+                    p => p.CategoryId == categoryId.Value);
             }
 
             return await query.CountAsync();
         }
 
-        // =================================================
-        // FILTER + SEARCH + PAGINATION
-        // =================================================
+        // =========================
+        // FILTER + PAGINATION
+        // =========================
+
         public async Task<IEnumerable<Post>> GetFilteredPagedAsync(
             string? keyword,
             int? categoryId,
             int page,
-            int pageSize)
+            int pageSize,
+            bool publishedOnly = true)
         {
             var query = _context.Posts
                 .AsQueryable();
 
-            // SEARCH
+            if (publishedOnly)
+            {
+                query = query.Where(
+                    p => p.IsPublished);
+            }
+
             if (!string.IsNullOrWhiteSpace(keyword))
             {
                 query = query.Where(p =>
@@ -148,14 +216,15 @@ namespace BlogApi.DAL.Repositories
                     p.Content.Contains(keyword));
             }
 
-            // CATEGORY FILTER
             if (categoryId.HasValue)
             {
-                query = query.Where(p =>
-                    p.CategoryId == categoryId.Value);
+                query = query.Where(
+                    p => p.CategoryId == categoryId.Value);
             }
 
             return await query
+                .Include(p => p.User)
+                .Include(p => p.Category)
                 .OrderByDescending(p => p.CreatedAt)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
@@ -165,6 +234,7 @@ namespace BlogApi.DAL.Repositories
         // =========================
         // CREATE
         // =========================
+
         public async Task<Post> AddAsync(Post post)
         {
             await _context.Posts.AddAsync(post);
@@ -177,6 +247,7 @@ namespace BlogApi.DAL.Repositories
         // =========================
         // UPDATE
         // =========================
+
         public async Task UpdateAsync(Post post)
         {
             _context.Posts.Update(post);
@@ -187,6 +258,7 @@ namespace BlogApi.DAL.Repositories
         // =========================
         // DELETE
         // =========================
+
         public async Task DeleteAsync(int id)
         {
             var post = await _context.Posts
