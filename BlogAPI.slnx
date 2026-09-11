@@ -2,4 +2,5 @@
   <Project Path="BlogApi.BLL/BlogApi.BLL.csproj" />
   <Project Path="BlogAPI.DAL/BlogApi.DAL.csproj" />
   <Project Path="BlogAPI/BlogApi.PL.csproj" />
+  <Project Path="Blog_Frontend/Blog_Frontend.csproj" Id="19399d67-8735-459b-b368-5cf00345554c" />
 </Solution>
