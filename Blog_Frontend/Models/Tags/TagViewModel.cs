@@ -1,6 +1,9 @@
-﻿namespace Blog_Frontend.Models.Tags
+﻿namespace BlogMVC.Models.Tags
 {
     public class TagViewModel
     {
+        public int Id { get; set; }
+
+        public string Name { get; set; } = string.Empty;
     }
 }

@@ -1,6 +1,136 @@
-﻿namespace Blog_Frontend.Views.Auth
-{
-    public class Register
-    {
-    }
+﻿@model BlogMVC.Models.Auth.RegisterViewModel
+
+@{
+    ViewData["Title"] = "Register";
+}
+
+<div class="row justify-content-center">
+
+    <div class="col-md-6">
+
+        <div class="auth-card">
+
+            <div class="text-center mb-4">
+
+                <div class="auth-icon">
+
+                    <i class="bi bi-person-plus"></i>
+
+                </div>
+
+                <h2 class="fw-bold">
+                    Create Account
+                </h2>
+
+                <p class="text-muted">
+                    Join BlogSphere today
+                </p>
+
+            </div>
+
+            <form asp-action="Register"
+                  method="post">
+
+                @Html.AntiForgeryToken()
+
+                <div asp-validation-summary="ModelOnly"
+                     class="text-danger mb-3">
+                </div>
+
+                <div class="mb-3">
+
+                    <label asp-for="Username"
+                           class="form-label">
+                        Username
+                    </label>
+
+                    <input asp-for="Username"
+                           class="form-control"
+                           placeholder="Enter username" />
+
+                    <span asp-validation-for="Username"
+                          class="text-danger">
+                    </span>
+
+                </div>
+
+                <div class="mb-3">
+
+                    <label asp-for="Email"
+                           class="form-label">
+                        Email
+                    </label>
+
+                    <input asp-for="Email"
+                           class="form-control"
+                           placeholder="Enter email" />
+
+                    <span asp-validation-for="Email"
+                          class="text-danger">
+                    </span>
+
+                </div>
+
+                <div class="mb-3">
+
+                    <label asp-for="Password"
+                           class="form-label">
+                        Password
+                    </label>
+
+                    <input asp-for="Password"
+                           class="form-control"
+                           placeholder="Enter password" />
+
+                    <span asp-validation-for="Password"
+                          class="text-danger">
+                    </span>
+
+                </div>
+
+                <div class="mb-4">
+
+                    <label asp-for="ConfirmPassword"
+                           class="form-label">
+                        Confirm Password
+                    </label>
+
+                    <input asp-for="ConfirmPassword"
+                           class="form-control"
+                           placeholder="Confirm password" />
+
+                    <span asp-validation-for="ConfirmPassword"
+                          class="text-danger">
+                    </span>
+
+                </div>
+
+                <button type="submit"
+                        class="btn btn-primary w-100">
+
+                    <i class="bi bi-person-plus"></i>
+                    Create Account
+
+                </button>
+
+            </form>
+
+            <p class="text-center mt-4 mb-0">
+
+                Already have an account?
+
+                <a asp-action="Login">
+                    Login
+                </a>
+
+            </p>
+
+        </div>
+
+    </div>
+
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
 }

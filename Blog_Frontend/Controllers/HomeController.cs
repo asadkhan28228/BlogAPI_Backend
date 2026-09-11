@@ -1,25 +1,35 @@
-using Blog_Frontend.Models;
+using BlogMVC.Models.Posts;
+using BlogMVC.Services;
 using Microsoft.AspNetCore.Mvc;
-using System.Diagnostics;
 
-namespace Blog_Frontend.Controllers
+namespace BlogMVC.Controllers
 {
     public class HomeController : Controller
     {
-        public IActionResult Index()
+        private readonly ApiService _apiService;
+
+        public HomeController(ApiService apiService)
         {
-            return View();
+            _apiService = apiService;
         }
 
-        public IActionResult Privacy()
+        public async Task<IActionResult> Index()
         {
-            return View();
-        }
+            try
+            {
+                var result =
+                    await _apiService
+                        .GetAsync<PostPagedResultViewModel>(
+                            "api/Posts?page=1&pageSize=6");
 
-        [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-        public IActionResult Error()
-        {
-            return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+                return View(result ??
+                    new PostPagedResultViewModel());
+            }
+            catch
+            {
+                return View(
+                    new PostPagedResultViewModel());
+            }
         }
     }
 }

@@ -1,14 +1,14 @@
+﻿
 ﻿using BlogApi.BLL.DTOs.PostTag;
 using BlogApi.BLL.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
-namespace BlogApi.PL.Controllers
+namespace BlogAPI.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize]
     public class PostTagsController : ControllerBase
     {
         private readonly IPostTagService _postTagService;
@@ -19,10 +19,13 @@ namespace BlogApi.PL.Controllers
             _postTagService = postTagService;
         }
 
-        // =========================
-        // GET TAGS OF POST
-        // =========================
-        [HttpGet("post/{postId}")]
+        // ==========================================================
+        // GET POST TAGS
+        // Public
+        // ==========================================================
+
+        [HttpGet("post/{postId:int}")]
+        [AllowAnonymous]
         public async Task<IActionResult> GetByPostId(
             int postId)
         {
@@ -39,10 +42,13 @@ namespace BlogApi.PL.Controllers
             return Ok(tags);
         }
 
-        // =========================
-        // ADD TAG TO POST
-        // =========================
-        [HttpPost("post/{postId}")]
+        // ==========================================================
+        // ADD TAG
+        // Login required
+        // ==========================================================
+
+        [HttpPost("post/{postId:int}")]
+        [Authorize]
         public async Task<IActionResult> AddTag(
             int postId,
             [FromBody] AddPostTagDto dto)
@@ -59,7 +65,8 @@ namespace BlogApi.PL.Controllers
                     "Tag data is required.");
             }
 
-            var userId = GetCurrentUserId();
+            var userId =
+                GetCurrentUserId();
 
             if (userId == null)
             {
@@ -88,10 +95,14 @@ namespace BlogApi.PL.Controllers
             }
         }
 
-        // =========================
-        // REMOVE TAG FROM POST
-        // =========================
-        [HttpDelete("post/{postId}/tag/{tagId}")]
+        // ==========================================================
+        // REMOVE TAG
+        // Login required
+        // ==========================================================
+
+        [HttpDelete(
+            "post/{postId:int}/tag/{tagId:int}")]
+        [Authorize]
         public async Task<IActionResult> RemoveTag(
             int postId,
             int tagId)
@@ -103,7 +114,8 @@ namespace BlogApi.PL.Controllers
                     "Invalid post ID or tag ID.");
             }
 
-            var userId = GetCurrentUserId();
+            var userId =
+                GetCurrentUserId();
 
             if (userId == null)
             {
@@ -121,16 +133,17 @@ namespace BlogApi.PL.Controllers
             if (!result)
             {
                 return NotFound(
-                    "Post, tag assignment not found, or you are not the owner.");
+                    "Post tag assignment not found or you are not the owner.");
             }
 
             return Ok(
                 "Tag removed from post successfully.");
         }
 
-        // =========================
-        // GET USER ID FROM JWT
-        // =========================
+        // ==========================================================
+        // CURRENT USER ID
+        // ==========================================================
+
         private int? GetCurrentUserId()
         {
             var userId =
@@ -143,18 +156,16 @@ namespace BlogApi.PL.Controllers
             }
 
             if (!int.TryParse(
-                    userId,
-                    out int userIdValue))
+                userId,
+                out var userIdValue))
             {
                 return null;
             }
 
-            if (userIdValue <= 0)
-            {
-                return null;
-            }
-
-            return userIdValue;
+            return userIdValue > 0
+                ? userIdValue
+                : null;
         }
     }
 }
+

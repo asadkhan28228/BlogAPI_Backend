@@ -1,3 +1,4 @@
+﻿
 ﻿using BlogApi.BLL.Common;
 using BlogApi.BLL.DTOs.Comment;
 using BlogApi.BLL.Interfaces;
@@ -5,11 +6,10 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
-namespace BlogApi.PL.Controllers
+namespace BlogAPI.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize]
     public class CommentsController : ControllerBase
     {
         private readonly ICommentService _commentService;
@@ -20,77 +20,111 @@ namespace BlogApi.PL.Controllers
             _commentService = commentService;
         }
 
-        // =========================
-        // GET ALL COMMENTS
-        // =========================
+        // ==========================================================
+        // GET ALL
+        // Public
+        // ==========================================================
+
         [HttpGet]
+        [AllowAnonymous]
         public async Task<IActionResult> GetAll()
         {
-            var comments =await _commentService.GetAllAsync();
+            var comments =
+                await _commentService.GetAllAsync();
 
             return Ok(comments);
         }
 
-        // =========================
-        // GET COMMENTS BY POST
-        // =========================
-        [HttpGet("post/{postId}")]
-        public async Task<IActionResult> GetByPostId(int postId)
+        // ==========================================================
+        // GET BY POST
+        // Public
+        // ==========================================================
+
+        [HttpGet("post/{postId:int}")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetByPostId(
+            int postId)
         {
             if (postId <= 0)
             {
-                return BadRequest("Invalid post ID.");
+                return BadRequest(
+                    "Invalid post ID.");
             }
 
             var comments =
-                await _commentService.GetByPostIdAsync(postId);
-                return Ok(comments);
+                await _commentService
+                    .GetByPostIdAsync(postId);
+
+            return Ok(comments);
         }
 
-        // =========================
-        // GET COMMENT BY ID
-        // =========================
-        [HttpGet("{id}")]
+        // ==========================================================
+        // GET BY ID
+        // Public
+        // ==========================================================
+
+        [HttpGet("{id:int}")]
+        [AllowAnonymous]
         public async Task<IActionResult> GetById(int id)
         {
             if (id <= 0)
             {
-                return BadRequest("Invalid comment ID.");
+                return BadRequest(
+                    "Invalid comment ID.");
             }
 
-            var comment =await _commentService.GetByIdAsync(id);
+            var comment =
+                await _commentService
+                    .GetByIdAsync(id);
 
             if (comment == null)
             {
-                return NotFound("Comment not found.");
+                return NotFound(
+                    "Comment not found.");
             }
 
             return Ok(comment);
         }
 
-        // =========================
-        // CREATE COMMENT
-        // =========================
+        // ==========================================================
+        // CREATE
+        // Login required
+        // ==========================================================
+
         [HttpPost]
-        public async Task<IActionResult> Create([FromBody] CreateCommentDto dto)
+        [Authorize]
+        public async Task<IActionResult> Create(
+            [FromBody] CreateCommentDto dto)
         {
             if (dto == null)
             {
-                return BadRequest("Comment data is required.");
+                return BadRequest(
+                    "Comment data is required.");
             }
 
-            var userId = GetCurrentUserId();
+            var userId =
+                GetCurrentUserId();
 
             if (userId == null)
             {
-                return Unauthorized("User ID not found.");
+                return Unauthorized(
+                    "User ID not found.");
             }
 
             try
             {
-                var comment =await _commentService.CreateAsync(dto,userId.Value);
+                var comment =
+                    await _commentService.CreateAsync(
+                        dto,
+                        userId.Value);
 
-                return CreatedAtAction(nameof(GetById),new { id = comment.Id },comment);
+                return CreatedAtAction(
+                    nameof(GetById),
+                    new
+                    {
+                        id = comment.Id
+                    },
+                    comment);
             }
             catch (ArgumentException ex)
             {
@@ -98,74 +132,102 @@ namespace BlogApi.PL.Controllers
             }
         }
 
-        // =========================
-        // UPDATE COMMENT
-        // =========================
-        [HttpPut("{id}")]
-        public async Task<IActionResult> Update(int id,[FromBody] UpdateCommentDto dto)
+        // ==========================================================
+        // UPDATE
+        // Login required
+        // ==========================================================
+
+        [HttpPut("{id:int}")]
+        [Authorize]
+        public async Task<IActionResult> Update(
+            int id,
+            [FromBody] UpdateCommentDto dto)
         {
             if (id <= 0)
             {
-                return BadRequest("Invalid comment ID.");
+                return BadRequest(
+                    "Invalid comment ID.");
             }
 
             if (dto == null)
             {
-                return BadRequest("Comment data is required.");
+                return BadRequest(
+                    "Comment data is required.");
             }
 
-            var userId = GetCurrentUserId();
+            var userId =
+                GetCurrentUserId();
 
             if (userId == null)
             {
-                return Unauthorized("User ID not found.");
+                return Unauthorized(
+                    "User ID not found.");
             }
 
-            var result =await _commentService.UpdateAsync(id,dto,userId.Value);
+            var result =
+                await _commentService.UpdateAsync(
+                    id,
+                    dto,
+                    userId.Value);
 
             if (!result)
             {
-                return NotFound("Comment not found or you are not the owner.");
+                return NotFound(
+                    "Comment not found or you are not the owner.");
             }
 
-            return Ok("Comment updated successfully.");
+            return Ok(
+                "Comment updated successfully.");
         }
 
-        // =========================
-        // DELETE COMMENT
-        // =========================
-     
-    [HttpDelete("{id}")]
-    public async Task<IActionResult> Delete(int id)
-    {
-        if (id <= 0)
+        // ==========================================================
+        // DELETE
+        // Login required
+        // ==========================================================
+
+        [HttpDelete("{id:int}")]
+        [Authorize]
+        public async Task<IActionResult> Delete(int id)
         {
-            return BadRequest("Invalid comment ID.");
+            if (id <= 0)
+            {
+                return BadRequest(
+                    "Invalid comment ID.");
+            }
+
+            var userId =
+                GetCurrentUserId();
+
+            if (userId == null)
+            {
+                return Unauthorized(
+                    "User ID not found.");
+            }
+
+            var isAdmin =
+                User.IsInRole(Roles.Admin);
+
+            var result =
+                await _commentService.DeleteAsync(
+                    id,
+                    userId.Value,
+                    isAdmin);
+
+            if (!result)
+            {
+                return NotFound(
+                    "Comment not found or you are not the owner.");
+            }
+
+            return Ok(
+                "Comment deleted successfully.");
         }
 
-        var userId = GetCurrentUserId();
+        // ==========================================================
+        // CURRENT USER ID
+        // ==========================================================
 
-        if (userId == null)
-        {
-            return Unauthorized("User ID not found.");
-        }
-
-        var isAdmin = User.IsInRole(Roles.Admin);
-
-        var result = await _commentService.DeleteAsync(id, userId.Value, isAdmin);
-
-        if (!result)
-        {
-            return NotFound("Comment not found or you are not the owner.");
-        }
-
-        return Ok("Comment deleted successfully.");
-    }
-
-    // =========================
-    // GET USER ID FROM JWT
-    // =========================
-    private int? GetCurrentUserId()
+        private int? GetCurrentUserId()
         {
             var userId =
                 User.FindFirstValue(
@@ -177,18 +239,16 @@ namespace BlogApi.PL.Controllers
             }
 
             if (!int.TryParse(
-                    userId,
-                    out int userIdValue))
+                userId,
+                out var userIdValue))
             {
                 return null;
             }
 
-            if (userIdValue <= 0)
-            {
-                return null;
-            }
-
-            return userIdValue;
+            return userIdValue > 0
+                ? userIdValue
+                : null;
         }
     }
 }
+

@@ -1,8 +1,124 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+﻿@model BlogMVC.Models.Posts.PostPagedResultViewModel
+
+@{
+    ViewData["Title"] = "Home";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<section class="hero-section">
+
+    <div class="container">
+
+        <div class="row align-items-center">
+
+            <div class="col-lg-7">
+
+                <span class="badge bg-primary mb-3">
+                    Welcome to BlogSphere
+                </span>
+
+                <h1 class="display-4 fw-bold">
+                    Discover Ideas.
+                    <br />
+                    Share Your Story.
+                </h1>
+
+                <p class="lead text-muted mt-3">
+                    A modern blogging platform where you can
+                    discover, create and share meaningful content.
+                </p>
+
+                <a asp-controller="Posts"
+                   asp-action="Index"
+                   class="btn btn-primary btn-lg mt-3">
+
+                    Explore Posts
+                    <i class="bi bi-arrow-right"></i>
+
+                </a>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+
+    <h2 class="fw-bold">
+        Latest Posts
+    </h2>
+
+    <a asp-controller="Posts"
+       asp-action="Index"
+       class="btn btn-outline-primary">
+
+        View All
+
+    </a>
+
+</div>
+
+<div class="row g-4">
+
+    @foreach (var post in Model.Items)
+    {
+        <div class="col-md-6 col-lg-4">
+
+            <div class="card post-card h-100">
+
+                <div class="card-body">
+
+                    @if (post.Category != null)
+                    {
+                        <span class="badge bg-light text-primary mb-3">
+
+                            @post.Category.Name
+
+                        </span>
+                    }
+
+                    <h4 class="card-title">
+
+                        @post.Title
+
+                    </h4>
+
+                    <p class="text-muted">
+
+                        @(post.Content.Length > 140
+                            ? post.Content.Substring(0, 140) + "..."
+                            : post.Content)
+
+                    </p>
+
+                    <div class="small text-muted mb-3">
+
+                        <i class="bi bi-person"></i>
+
+                        @(post.Author?.Username ?? "Unknown")
+
+                        <span class="mx-2">•</span>
+
+                        @post.CreatedAt.ToString("MMM dd, yyyy")
+
+                    </div>
+
+                    <a asp-controller="Posts"
+                       asp-action="Details"
+                       asp-route-id="@post.Id"
+                       class="btn btn-sm btn-primary">
+
+                        Read More
+
+                    </a>
+
+                </div>
+
+            </div>
+
+        </div>
+    }
+
 </div>

@@ -1,6 +1,213 @@
-﻿namespace Blog_Frontend.Views.Posts
-{
-    public class Details
-    {
-    }
+﻿@model BlogMVC.Models.Posts.PostViewModel
+
+@using BlogMVC.Models.Comments
+@using BlogMVC.Models.Tags
+
+@{
+    ViewData["Title"] = Model.Title;
+
+    var comments =
+        ViewBag.Comments as List<CommentViewModel>
+        ?? new List<CommentViewModel>();
+
+    var tags =
+        ViewBag.Tags as List<TagViewModel>
+        ?? new List<TagViewModel>();
 }
+
+<div class="row justify-content-center">
+
+    <div class="col-lg-9">
+
+        <article class="card border-0 shadow-sm">
+
+            <div class="card-body p-4 p-lg-5">
+
+                @if (Model.Category != null)
+                {
+                    <span class="badge bg-primary mb-3">
+
+                        @Model.Category.Name
+
+                    </span>
+                }
+
+                <h1 class="display-5 fw-bold mb-3">
+
+                    @Model.Title
+
+                </h1>
+
+                <div class="text-muted mb-4">
+
+                    <i class="bi bi-person-circle"></i>
+
+                    @(Model.Author?.Username ?? "Unknown")
+
+                    <span class="mx-2">•</span>
+
+                    @Model.CreatedAt.ToString(
+                        "MMMM dd, yyyy")
+
+                </div>
+
+                <hr />
+
+                <div class="post-content mt-4">
+
+                    @Html.Raw(
+                        Model.Content
+                            .Replace(
+                                "\n",
+                                "<br />"))
+
+                </div>
+
+                @if (tags.Any())
+                {
+                    <div class="mt-4">
+
+                        <strong>
+                            Tags:
+                        </strong>
+
+                        @foreach (var tag in tags)
+                        {
+                            <span class="badge bg-light text-dark me-1">
+
+                                #@tag.Name
+
+                            </span>
+                        }
+
+                    </div>
+                }
+
+            </div>
+
+        </article>
+
+        <div class="card border-0 shadow-sm mt-4">
+
+            <div class="card-body p-4">
+
+                <h4 class="fw-bold mb-4">
+
+                    Comments
+                    <span class="badge bg-primary">
+                        @comments.Count
+                    </span>
+
+                </h4>
+
+                @if (Context.Session.GetString("AccessToken") != null)
+                {
+                    <form asp-controller="Comments"
+                          asp-action="Create"
+                          method="post"
+                          class="mb-4">
+
+                        @Html.AntiForgeryToken()
+
+                        <input type="hidden"
+                               name="PostId"
+                               value="@Model.Id" />
+
+                        <textarea name="Content"
+                                  class="form-control mb-2"
+                                  rows="3"
+                                  placeholder="Write a comment..."
+                                  required></textarea>
+
+                        <button type="submit"
+                                class="btn btn-primary">
+
+                            <i class="bi bi-send"></i>
+                            Add Comment
+
+                        </button>
+
+                    </form>
+                }
+                else
+                {
+                    <div class="alert alert-light">
+
+                        Please
+                        <a asp-controller="Auth"
+                           asp-action="Login">
+
+                            login
+
+                        </a>
+                        to comment.
+
+                    </div>
+                }
+
+                @foreach (var comment in comments)
+                {
+                    <div class="comment-item">
+
+                        <div class="d-flex justify-content-between">
+
+                            <div>
+
+                                <strong>
+                                    User #@comment.UserId
+                                </strong>
+
+                                <small class="text-muted ms-2">
+
+                                    @comment.CreatedAt.ToString(
+                                        "MMM dd, yyyy HH:mm")
+
+                                </small>
+
+                            </div>
+
+                            @if (Context.Session.GetInt32("UserId") == comment.UserId
+                                || Context.Session.GetString("Role") == "Admin")
+                            {
+                                <form asp-controller="Comments"
+                                      asp-action="Delete"
+                                      method="post">
+
+                                    @Html.AntiForgeryToken()
+
+                                    <input type="hidden"
+                                           name="id"
+                                           value="@comment.Id" />
+
+                                    <input type="hidden"
+                                           name="postId"
+                                           value="@Model.Id" />
+
+                                    <button type="submit"
+                                            class="btn btn-sm btn-outline-danger">
+
+                                        <i class="bi bi-trash"></i>
+
+                                    </button>
+
+                                </form>
+                            }
+
+                        </div>
+
+                        <p class="mt-2 mb-0">
+
+                            @comment.Content
+
+                        </p>
+
+                    </div>
+                }
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>

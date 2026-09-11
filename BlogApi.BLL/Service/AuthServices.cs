@@ -1,3 +1,4 @@
+﻿
 ﻿using BlogApi.BLL.Dtos.Auth;
 using BlogApi.BLL.Interface;
 using BlogApi.DAL.Entities;
@@ -19,7 +20,6 @@ namespace BlogAPI.BLL.Services
 
         private readonly IJwtService _jwtService;
 
-
         public AuthService(
             IUserRepository userRepository,
             AppDbContext context,
@@ -31,20 +31,20 @@ namespace BlogAPI.BLL.Services
 
             _jwtService = jwtService;
 
-            _passwordHasher = new PasswordHasher<User>();
+            _passwordHasher =
+                new PasswordHasher<User>();
         }
 
-
-        // ============================================
+        // ==========================================================
         // REGISTER
-        // ============================================
+        // ==========================================================
 
         public async Task<AuthResponseDto> RegisterAsync(
             RegisterDto dto)
         {
             var existingUser =
-                await _userRepository.GetByEmailAsync(dto.Email);
-
+                await _userRepository
+                    .GetByEmailAsync(dto.Email);
 
             if (existingUser != null)
             {
@@ -52,6 +52,11 @@ namespace BlogAPI.BLL.Services
                     "Email already registered.");
             }
 
+            // ======================================================
+            // IMPORTANT:
+            // Every normal registration is ALWAYS User.
+            // Client se Role receive nahi kar rahe.
+            // ======================================================
 
             var user = new User
             {
@@ -64,43 +69,54 @@ namespace BlogAPI.BLL.Services
                 CreatedAt = DateTime.UtcNow
             };
 
-
             user.PasswordHash =
                 _passwordHasher.HashPassword(
                     user,
                     dto.Password);
 
-
             await _userRepository.AddAsync(user);
 
+            // ======================================================
+            // ACCESS TOKEN
+            // ======================================================
 
-            // Generate tokens
             var accessToken =
                 _jwtService.GenerateToken(user);
 
+            // ======================================================
+            // REFRESH TOKEN
+            // ======================================================
+
             var refreshToken =
                 CreateRefreshToken(user);
-
 
             await _context.RefreshTokens.AddAsync(
                 refreshToken);
 
             await _context.SaveChangesAsync();
 
-
             return new AuthResponseDto
             {
-                Message = "Registration successful.",
+                Message =
+                    "Registration successful.",
 
-                UserId = user.User_id,
+                UserId =
+                    user.User_id,
 
-                Email = user.Email,
+                Email =
+                    user.Email,
 
-                Username = user.Username,
+                Username =
+                    user.Username,
 
-                Token = accessToken,
+                Role =
+                    user.Role,
 
-                RefreshToken = refreshToken.Token,
+                Token =
+                    accessToken,
+
+                RefreshToken =
+                    refreshToken.Token,
 
                 AccessTokenExpiresAt =
                     _jwtService.GetTokenExpiration(),
@@ -110,17 +126,16 @@ namespace BlogAPI.BLL.Services
             };
         }
 
-
-        // ============================================
+        // ==========================================================
         // LOGIN
-        // ============================================
+        // ==========================================================
 
         public async Task<AuthResponseDto> LoginAsync(
             LoginDto dto)
         {
             var user =
-                await _userRepository.GetByEmailAsync(dto.Email);
-
+                await _userRepository
+                    .GetByEmailAsync(dto.Email);
 
             if (user == null)
             {
@@ -128,50 +143,60 @@ namespace BlogAPI.BLL.Services
                     "Invalid email or password.");
             }
 
-
             var result =
                 _passwordHasher.VerifyHashedPassword(
                     user,
                     user.PasswordHash,
                     dto.Password);
 
-
-            if (result == PasswordVerificationResult.Failed)
+            if (result ==
+                PasswordVerificationResult.Failed)
             {
                 throw new UnauthorizedAccessException(
                     "Invalid email or password.");
             }
 
+            // ======================================================
+            // ACCESS TOKEN
+            // ======================================================
 
-            // Generate Access Token
             var accessToken =
                 _jwtService.GenerateToken(user);
 
+            // ======================================================
+            // REFRESH TOKEN
+            // ======================================================
 
-            // Generate Refresh Token
             var refreshToken =
                 CreateRefreshToken(user);
-
 
             await _context.RefreshTokens.AddAsync(
                 refreshToken);
 
             await _context.SaveChangesAsync();
 
-
             return new AuthResponseDto
             {
-                Message = "Login successful.",
+                Message =
+                    "Login successful.",
 
-                UserId = user.User_id,
+                UserId =
+                    user.User_id,
 
-                Email = user.Email,
+                Email =
+                    user.Email,
 
-                Username = user.Username,
+                Username =
+                    user.Username,
 
-                Token = accessToken,
+                Role =
+                    user.Role,
 
-                RefreshToken = refreshToken.Token,
+                Token =
+                    accessToken,
+
+                RefreshToken =
+                    refreshToken.Token,
 
                 AccessTokenExpiresAt =
                     _jwtService.GetTokenExpiration(),
@@ -181,80 +206,79 @@ namespace BlogAPI.BLL.Services
             };
         }
 
-
-        // ============================================
+        // ==========================================================
         // REFRESH TOKEN
-        // ============================================
+        // ==========================================================
 
-        public async Task<AuthResponseDto?> RefreshTokenAsync(
-            RefreshTokenRequestDto dto)
+        public async Task<AuthResponseDto?>
+            RefreshTokenAsync(
+                RefreshTokenRequestDto dto)
         {
             var refreshToken =
                 await _context.RefreshTokens
                     .Include(rt => rt.User)
                     .FirstOrDefaultAsync(
-                        rt => rt.Token == dto.RefreshToken);
+                        rt => rt.Token ==
+                              dto.RefreshToken);
 
-
-            // Token does not exist
             if (refreshToken == null)
             {
                 return null;
             }
 
-
-            // Token already revoked
             if (refreshToken.IsRevoked)
             {
                 return null;
             }
 
-
-            // Token expired
-            if (refreshToken.ExpiresAt <= DateTime.UtcNow)
+            if (refreshToken.ExpiresAt <=
+                DateTime.UtcNow)
             {
                 return null;
             }
 
+            var user =
+                refreshToken.User;
 
-            var user = refreshToken.User;
-
-
-            // Revoke old refresh token
+            // Revoke old token
             refreshToken.RevokedAt =
                 DateTime.UtcNow;
 
-
-            // Generate new access token
+            // New access token
             var newAccessToken =
                 _jwtService.GenerateToken(user);
 
-
-            // Generate new refresh token
+            // New refresh token
             var newRefreshToken =
                 CreateRefreshToken(user);
-
 
             await _context.RefreshTokens.AddAsync(
                 newRefreshToken);
 
-
             await _context.SaveChangesAsync();
-
 
             return new AuthResponseDto
             {
-                Message = "Token refreshed successfully.",
+                Message =
+                    "Token refreshed successfully.",
 
-                UserId = user.User_id,
+                UserId =
+                    user.User_id,
 
-                Email = user.Email,
+                Email =
+                    user.Email,
 
-                Username = user.Username,
+                Username =
+                    user.Username,
 
-                Token = newAccessToken,
+                Role =
+                    user.Role,
 
-                RefreshToken = newRefreshToken.Token,
+                Token =
+                    newAccessToken,
+
+                RefreshToken =
+                    newRefreshToken.Token,
 
                 AccessTokenExpiresAt =
                     _jwtService.GetTokenExpiration(),
@@ -264,53 +288,46 @@ namespace BlogAPI.BLL.Services
             };
         }
 
+        // ==========================================================
+        // LOGOUT
+        // ==========================================================
 
-        // ============================================
-        // REVOKE REFRESH TOKEN / LOGOUT
-        // ============================================
-
-        public async Task<bool> RevokeRefreshTokenAsync(
-            string refreshToken)
+        public async Task<bool>
+            RevokeRefreshTokenAsync(
+                string refreshToken)
         {
             var token =
                 await _context.RefreshTokens
                     .FirstOrDefaultAsync(
-                        rt => rt.Token == refreshToken);
-
+                        rt => rt.Token ==
+                              refreshToken);
 
             if (token == null)
             {
                 return false;
             }
 
-
             if (token.IsRevoked)
             {
                 return false;
             }
 
-
             token.RevokedAt =
                 DateTime.UtcNow;
 
-
             await _context.SaveChangesAsync();
-
 
             return true;
         }
 
-
-        // ============================================
+        // ==========================================================
         // CREATE REFRESH TOKEN
-        // ============================================
+        // ==========================================================
 
         private RefreshToken CreateRefreshToken(
             User user)
         {
-            var refreshTokenDays =
-                7;
-
+            const int refreshTokenDays = 7;
 
             return new RefreshToken
             {
@@ -330,3 +347,4 @@ namespace BlogAPI.BLL.Services
         }
     }
 }
+
